@@ -1,0 +1,32 @@
+{
+  $schema: "https://q64.dev/schema/qube.json5",
+  name: "qubepods.examples.counter",
+  version: "0.1.0",
+  license: "MIT OR Apache-2.0",
+  description: "The frontend twin: renders the button + count and holds one wRPC channel to the backend.",
+  type: "application",
+  entry: "src/main.q",
+
+  // Local build: link the sibling backend as the module `counter`, so
+  // `import counter.{join}` resolves. `qube run` normalises this to
+  // `q64 emit … --module counter=../backend/src` (it reads `../backend/src/lib.q`).
+  dependencies: {
+    counter: { path: "backend" },
+  },
+
+  // Deploy: the same name `counter` binds to the backend's wRPC endpoint, so
+  // `connect<counter.join>()` opens the live channel. On qubepods the project
+  // resolves this to its own backend twin; the `dependencies` path above is how
+  // the frontend type-checks against the backend's interface when building.
+  rpc: {
+    import: {
+      counter: "wrpc://counter-backend",
+    },
+  },
+
+  // Opening/using the channel crosses a wire, so the frontend's effect set
+  // carries @wire (visible in `qube audit`).
+  effects: {
+    declared: ["@wire"],
+  },
+}

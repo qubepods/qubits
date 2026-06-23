@@ -1,6 +1,8 @@
 # twin-counter — compiler readiness & the path forward
 
-`backend.q` and `frontend.q` are written against the **target** q64 language.
+The backend (`backend/src/lib.q`) and frontend (`src/main.q`) — referred to below
+by their short names `backend.q` / `frontend.q` — are written against the
+**target** q64 language.
 **Both now emit to wasm as written** through the q64 codegen — verified against
 `q64 emit` + wasm instantiation (a stub-host round-trip in
 `q64-test/tests/build.test.ts`), not aspirational. This note is the honest map:

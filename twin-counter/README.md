@@ -5,19 +5,44 @@ built the way qubepods backends are built — as a **twin**.
 
 A twin is two qubes, two wasm:
 
-- [**`frontend/`**](./frontend) — renders the button and the number (wasm32 →
-  WebGPU), and holds one live channel to the backend.
-- [**`backend/`**](./backend) — **you write it.** It keeps the count in a WASI
-  key-value store and fans every change out to all the frontends over a wRPC
-  channel — so a tap on any device updates them all.
+- the **frontend** ([`src/main.q`](./src/main.q)) — renders the button and the
+  number (wasm32 → WebGPU), and holds one live channel to the backend. It's the
+  application you run, so its manifest is the project root ([`qube.json5`](./qube.json5));
+  `qube run` builds + runs it here.
+- [**`backend/`**](./backend) — **you write it.** A library qube
+  ([`backend/src/lib.q`](./backend/src/lib.q)) the frontend depends on: it keeps
+  the count in a WASI key-value store and fans every change out to all the
+  frontends over a wRPC channel — so a tap on any device updates them all.
 
 The count lives in the backend's key-value store, so it's one number for the
 whole project; the backend is a single instance, so it can hold the set of
 connected frontends and broadcast to them.
 
+## Layout
+
+`qube run` executes **where the manifest is** — it walks up from the current
+directory to the nearest `qube.json5`, builds that qube's `entry`, and runs it.
+So the runnable application's manifest sits at the project root:
+
+```
+twin-counter/
+├── qube.json5        # the frontend application — entry src/main.q, depends on ./backend
+├── src/
+│   └── main.q        # the frontend (what runs)
+└── backend/          # the library you write, linked as the module `counter`
+    ├── qube.json5    # library — entry src/lib.q
+    └── src/
+        └── lib.q
+```
+
+Run it from the root (`cd twin-counter && qube run`): the manifest there is the
+frontend, its `dependencies` resolve the backend (`q64 emit … --module
+counter=backend/src`), and both halves compile together. Each qube keeps its
+sources under `src/` — the layout dependency resolution and `qube build` expect.
+
 ## The backend you write
 
-[`backend/backend.q`](./backend/backend.q) — the count in a WASI KV binding
+[`backend/src/lib.q`](./backend/src/lib.q) — the count in a WASI KV binding
 (`env.kv` → `wasi:keyvalue`), and a q64 **actor** that owns the subscriber set
 and fans out:
 
@@ -53,7 +78,7 @@ wire — see [`fan-out.md`](./fan-out.md)).
 
 ## The frontend
 
-[`frontend/frontend.q`](./frontend/frontend.q) — renders, and holds one channel
+[`src/main.q`](./src/main.q) — renders, and holds one channel
 to the twin:
 
 ```q64
@@ -76,7 +101,7 @@ fn paint {
 ```
 
 `connect<counter.join>()` opens the dual end of the backend's channel (the name
-`counter` is bound by the frontend's [`qube.json5`](./frontend/qube.json5)
+`counter` is bound by the frontend's [`qube.json5`](./qube.json5)
 `rpc.import`). The call carries `@wire`, visible in `qube audit`.
 
 > Two pieces are platform-side and marked `HOST SEAM` in the source: making the
@@ -145,7 +170,7 @@ qube run
 
 | File | What it is |
 |------|------------|
-| [`backend/backend.q`](./backend/backend.q) | The backend you write — count in a WASI KV binding (`env.kv`), an actor that fans out over a wRPC channel. |
-| [`backend/qube.json5`](./backend/qube.json5) | Backend manifest: library, `component.emit`, `rpc.export`, `@kv` + `@wire`. |
-| [`frontend/frontend.q`](./frontend/frontend.q) | The frontend — renders the button + count and holds one channel to the twin. |
-| [`frontend/qube.json5`](./frontend/qube.json5) | Frontend manifest: application, `rpc.import` of the backend, `@wire`. |
+| [`qube.json5`](./qube.json5) | The project root = the frontend application. `entry: src/main.q`; declares the backend as a path **dependency** (`counter`) so `import counter.{join}` resolves at build, plus the matching `rpc.import` for deploy. This is the manifest `qube run` finds. |
+| [`src/main.q`](./src/main.q) | The frontend — renders the button + count and holds one channel to the twin. |
+| [`backend/qube.json5`](./backend/qube.json5) | Backend manifest: library, `entry: src/lib.q`, `component.emit`, `rpc.export`, `@kv` + `@wire`. |
+| [`backend/src/lib.q`](./backend/src/lib.q) | The backend you write — count in a WASI KV binding (`env.kv`), an actor that fans out over a wRPC channel. |
