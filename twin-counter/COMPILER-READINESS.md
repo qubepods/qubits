@@ -25,7 +25,7 @@ cross-qube story is the component model + wRPC, driven by the `rpc` block in
 | `spawn { … }` (fire-and-forget) | cooperative task, eager v0 | ✅ runs (main / `for` / `if` bodies) |
 | method-style actor (`var c = C{}`, `c.m()`) | actor = self-taking fns | ✅ runs |
 | `Vec<Sender<…>>` (a Vec of senders) | Vec of a non-i64 element | 🟡 i64 Vec runs; non-scalar element types are the v0 boundary |
-| `actor Counter { state subs … handle Join(tx) handle Bump }` | **message-style** actor: typed payload messages + `tell` + `C.spawn()` | ⬜ gap (method-style is the working alternative) |
+| `actor Counter { … handle Bump handle Add(x) }` + `c.tell(Msg)` / `c.ask(Msg)` / `Counter.spawn()` | **message-style** actor dispatch | ✅ runs for scalar payloads (`tell(Bump)`, `tell(Add(5))`, `ask(Get)`, `spawn()`); non-scalar payloads (`Join(Sender)`) ride the `Vec<Sender>`/`move` gaps |
 | `@channel_handler pub fn join(session: Channel<i64, Tap>)` | rpc channel entry point | ⬜ gap (the channel-handler attribute + `Channel<S,R>` param) |
 | `channel<i64, Unbounded>()`, `tx.send`, `rx.recv` | in-process channel | ✅ runs |
 | `for n in rx` / `for _tap in session` | for-in over a channel/stream | 🟡 for-in over a Vec runs; over a live channel/stream is a gap |
@@ -103,25 +103,19 @@ To compile `backend.q` *as written*, in dependency order:
 1. ~~**Keyed `env.kv.increment(key, delta)`**~~ — ✅ **done.** The import takes
    `(key_ptr, key_len, delta)`; the host store is a `map<str,i64>`. The twin's
    `bump()`/`read()` on `"count"` compile and run (verified: `1,2,2,3`).
-2. **Message-style actors** — `handle Msg(payload) { … }` + `actor.tell(Msg(x))`
-   + `Actor.spawn()`. **This is a parser/AST gap, not just codegen** (verified):
-   - `tell` is a reserved keyword (`KW_TELL`) that the **parser never lowers**.
-     The actor body "parses raw" — `check.zig` validates `handle`/`tell` by
-     scanning the flat token stream (the CONC020 `tell`-on-a-reply lint), but
-     `tell` never becomes a structured AST node, so `c.tell(Msg)` can't reach
-     `build_hir` as a call (it hits `buildMainExprStmt`'s "not a `.call`" path).
-     Closing it needs a `tell` expression in `parse.zig`/`ast.zig` first, *then*
-     the dispatch lowering (which is small — handlers already lower to
-     self-taking functions, exactly like method-style `c.bump()`).
-   - `ask` is *not* a keyword, so `c.ask(Msg)` already parses as a method call;
-     the value-handler dispatch (`handle Get -> i64` ↔ `c.ask(Get)`) is a
-     codegen-only add. But the twin uses `tell`, not `ask`.
-   - Independently, the twin's `backend.q` doesn't pass `q64 check` yet
-     (`CONC050 channel policy required` on the `channel<…>()` in `join`), so the
-     source needs the channel-policy fix too.
-   So message-style actors are the **largest** remaining piece and span lexer/
-   parser/AST + codegen — a language-design step (the `tell` grammar, currently
-   unspecified in `concurrency.md`), not a codegen patch.
+2. ~~**Message-style actors**~~ — ✅ **done** for the scalar surface. The blocker
+   turned out to be the parser: `tell`/`spawn` are keywords (`KW_TELL`/`KW_SPAWN`)
+   the path parser didn't admit as segments, so `c.tell(Msg)` / `Counter.spawn()`
+   never became calls (and `c.tell`'s text dropped the `tell` token → `"c."`).
+   Fixed by admitting both as path segments (in `isPathStart` + `isPathToken`,
+   like `Vec.from`'s `KW_FROM`), then dispatching in `build_hir`: `c.tell(Bump)`
+   → the `Bump` handler, `c.tell(Add(5))` → `Add` with the payload, `c.ask(Get)`
+   → the value handler, `Counter.spawn()` → the default-state record. Runs
+   end-to-end (a counter actor: tells, payload, ask, spawn). **Remaining for the
+   twin specifically:** the payloads are non-scalar (`Join(tx: Sender<…>)`,
+   `move tx`), which ride the `Vec<Sender>` / `move` gaps below, and the twin's
+   `backend.q` still doesn't pass `q64 check` (`CONC050 channel policy required`
+   on the `join` channel).
 3. **`@channel_handler` + `Channel<S, R>`** — the rpc channel entry point: a
    `pub fn` taking a bidirectional channel, served over wRPC. Rides #2 and the
    component/wRPC export already wired in the manifest.
