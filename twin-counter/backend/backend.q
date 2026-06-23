@@ -44,7 +44,7 @@ let twin = Counter.spawn()
 // forwards its taps. (env.md §"Channel entry point" + rpc.md §"Remote channels".)
 @channel_handler
 pub fn join(session: Channel<i64, Tap>) @wire {
-    let (tx, rx) = channel<i64, Unbounded>()     // local: twin → this session
+    let (tx, rx) = channel<i64>(policy: Unbounded)  // local: twin → this session
     twin.tell(Join(move tx))                      // register this session with the twin
     spawn { for n in rx { session.send(n) } }     // pump the twin's pushes out to the frontend
     for _tap in session { twin.tell(Bump) }       // forward this session's taps to the twin

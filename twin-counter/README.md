@@ -37,7 +37,7 @@ actor Counter {
 
 @channel_handler
 pub fn join(session: Channel<i64, Tap>) @wire {
-    let (tx, rx) = channel<i64, Unbounded>()
+    let (tx, rx) = channel<i64>(policy: Unbounded)
     twin.tell(Join(move tx))                  // register this frontend
     spawn { for n in rx { session.send(n) } } // push the twin's updates out to it
     for _tap in session { twin.tell(Bump) }   // forward its taps to the twin
