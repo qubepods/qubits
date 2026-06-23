@@ -162,6 +162,27 @@ That import-to-Durable-Object binding is the WASI connection the platform is
 building out, and this example is its smallest end-to-end exercise: a qube
 that asks for `wasi:keyvalue` and a project whose Durable Object answers.
 
+### Why you write this in public
+
+This is an open repo. You're meant to pull it, read it, and run it — and that
+is exactly the point of declaring capabilities the way q64 does.
+
+The `@kv` line isn't a promise you have to take on faith. It's a fact you can
+check. Because both the source and the manifest are public, anyone — a
+teammate, a stranger, or an AI agent about to compose this qube into something
+larger — can read `qube.json5`, run `qube audit`, and see the whole truth:
+this thing wants a key-value store and *nothing else*. No network to ship the
+count somewhere, no filesystem, no surprise calls. If it tried to reach the
+network, the manifest would have to say `@network`, and `qube audit` would show
+it — before anyone ran a line.
+
+That's the opposite of "trust our sandbox." The wasm artifact **is** the
+boundary, and the boundary is in the open: you trust the code because you can
+see its declared shape, not because something promises to contain it. Shipping
+examples in public isn't a marketing nicety here — public, auditable
+capabilities are the security model. A counter is a small thing to audit; the
+habit is the point.
+
 ## Status & what's evolving
 
 This example is deliberately at the leading edge — it's both a demo and a
