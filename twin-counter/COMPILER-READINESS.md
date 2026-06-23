@@ -1,14 +1,18 @@
 # twin-counter — compiler readiness & the path forward
 
-`backend.q` is written against the **target** q64 language. Not all of it
-compiles through the q64 codegen yet. This note is the honest map: what runs
-today, what landed recently, and the concrete path to compile the backend
-*as written* — verified against `q64 emit` + the wasmtime host, not aspirational.
+`backend.q` and `frontend.q` are written against the **target** q64 language.
+**Both now emit to wasm as written** through the q64 codegen — verified against
+`q64 emit` + wasm instantiation (a stub-host round-trip in
+`q64-test/tests/build.test.ts`), not aspirational. This note is the honest map:
+what runs, what landed, and the one behavioural gap that's left (the live
+outbound pump — the runtime ABI's job).
 
 It answers one question in particular: **how does the frontend↔backend wire
-actually get built?** (Short version: not a `connect()` builtin — q64's
-cross-qube story is the component model + wRPC, driven by the `rpc` block in
-`qube.json5`. See `spec/rpc.md` in the q64 repo.)
+actually get built?** q64's cross-qube story is the component model + wRPC,
+driven by the `rpc` block in `qube.json5`: the frontend opens its end with
+`connect<counter.join>()` and the import (`import counter.{join}`) resolves
+against the backend (the `counter` qube) at build — `--module counter=<backend>`
+locally, the `rpc.import` binding on deploy. See `spec/rpc.md` in the q64 repo.
 
 ## Status legend
 
@@ -74,13 +78,29 @@ instantiation test):
    once per inbound message and stops on close. The one remaining behavioural
    gap is the **eager** outbound pump (see the table) — correct live
    re-broadcast is the runtime ABI (the DO interleaves pump + recv).
+8. **The importer side — `connect` + value-bearing recv + `presses()`** — the
+   `frontend.q` half now compiles too. `connect<counter.join>()` opens the dual
+   end (the `<…>` turbofish parses; lowers to the nullary `env.channel_connect`),
+   `for n in twin` binds each inbound i64 via `env.channel_take` (a
+   value-bearing Rx, vs the backend's empty `Tap`), `twin.send(Tap)` is a unit
+   `env.channel_send`, and `for _press in presses()` opens a host event stream
+   (`env.presses`, HOST SEAM 2). The cross-qube `import counter.{join}` resolves
+   against the backend (the `counter` qube) the normal way — `--module
+   counter=<backend>` (what the build driver wires from `qube.json5`'s
+   `rpc.import`). **The entire example — `backend.q` AND `frontend.q` — now
+   emits to wasm as written**; instantiated with a stub host the frontend
+   redraws on each broadcast and sends a tap per press (a full
+   round-trip is in `q64-test/tests/build.test.ts`).
 
 ## The cross-qube wire — the actual mechanism
 
-There is **no `connect()` builtin** (it resolves to `NameNotFound`), and a bare
-`import some.qube` is `UnknownModule`. q64 qubes talk over the **component model
-+ wRPC**, configured in `qube.json5` — exactly as `examples/rpc-server` +
-`examples/rpc-client` in the q64 repo demonstrate today:
+`connect<iface.fn>()` **is** a builtin now (it opens the channel session — the
+spec's importer form, `spec/rpc.md` §"Remote channels"); it lowers to the
+`env.channel_connect` host import. The `import counter.{join}` resolves against
+the providing qube the standard way (`--module counter=<backend>` locally; the
+`rpc.import` binding on deploy) — a bare `q64 emit` with no binding is still an
+honest `UnknownModule`, the same boundary `examples/rpc-client` lives at. q64
+qubes talk over the **component model + wRPC**, configured in `qube.json5`:
 
 **Export side (the backend, `type: "library"`):**
 
@@ -168,30 +188,27 @@ To compile `backend.q` *as written*, in dependency order:
    Verified: `Twin { state subs: Vec<Sender>; handle Join(tx) { subs.push(tx) };
    handle Bump { for s in subs { s.send(99) } } }` with two subscribers — both
    receive 99.
-3. **`@channel_handler` + `Channel<S, R>`** — the rpc channel entry point. This
-   is the **rpc/component/streams/runtime** layer, not a language feature like
-   1–2c: per `rpc.md`, `Channel<Tx, Rx>` is *sugar over a pair of WASIp3 streams*
-   (outbound `stream<Tx>` + inbound `stream<Rx>`) **served over wRPC**, so the
-   meaningful half (serving) is inherently component-model (preview3) + the
-   runtime transport adapter (`runtime/<host>/`), not pure codegen. Precise state:
-   - **annotation recognition** ✅ — `@http_handler` already compiles a
-     value-returning `pub fn` to an export; `@channel_handler` rides the same
-     annotation path.
-   - **void general exports** ⬜ — `join` is a *void* `pub fn`, which today routes
-     to the restrictive "screen handler" path (qview/state stmts only), not a
-     general library export.
-   - **`Channel<Tx, Rx>` param** ⬜ — a bidirectional endpoint = a *pair* of
-     channel buffers (send Tx, recv Rx); `session.send` / `for _tap in session`
-     would ride the channel machinery, but the param + dual representation is new.
-   - **module-level actor singleton** ⬜ — `let twin = Counter.spawn()` at module
-     scope (the per-project twin) is `NameNotFound` today.
-   - **paired-stream component emission + wRPC serving** ⬜ — the actual export as
-     a `stream<Tx>`/`stream<Rx>` world and the transport are component + runtime
-     work (the `runtime/wasmtime` host has no wRPC/stream adapter yet).
-   So the **whole twin language model compiles and runs** (1–2c); `@channel_handler`
-   is the serving boundary — a separate, larger, partly-runtime effort.
-4. ~~**for-in over a live channel/stream** (`for n in rx`)~~ — ✅ done. The
-   remaining surface the handler body uses.
+3. **`@channel_handler` + `Channel<Tx, Rx>`** — the rpc channel entry point.
+   Per `rpc.md`, `Channel<Tx, Rx>` is *sugar over a pair of WASIp3 streams*; the
+   v0 realization is a **host-import seam** (parallel to `env.kv`), the same
+   shape the qubepods DO host implements. Now ✅:
+   - **annotation + void general export** ✅ — `@channel_handler` routes `join`
+     through the full void-body builder (not the restrictive screen path),
+     exported by name; the body gets `let (tx,rx)=channel(…)`, `spawn`,
+     `twin.tell`, and the session loop.
+   - **`Channel<Tx, Rx>` param + session ops** ✅ — the session is an i64 handle;
+     `for _tap in session` → `while chan_recv(session) != 0` (`env.channel_recv`),
+     `session.send(x)` → `env.channel_send`. The importer dual works too:
+     `connect<…>()` (`env.channel_connect`), value-bearing `for n in twin`
+     (`env.channel_take`), `presses()` (`env.presses`).
+   - **module-level actor singleton** ✅ — `let twin = Counter.spawn()` allocates
+     once via the wasm `start`; the self-pointer lives in a module global.
+   - **paired-stream component emission + wRPC serving** ⬜ — exporting as a real
+     `stream<Tx>`/`stream<Rx>` component world over wRPC (vs the host-import
+     seam) and the transport adapter remain component + **runtime** work.
+   So the **whole twin language model compiles and runs**; what's left is the
+   runtime/serving boundary (the DO host + the eager→live pump).
+4. ~~**for-in over a live channel/stream** (`for n in rx`)~~ — ✅ done.
 
 A **compiles-today** backend (keyless `env.kv`, method-style actor, i64 Vec,
 fire-and-forget `spawn`) already exercises the persistence + fan-out data flow
