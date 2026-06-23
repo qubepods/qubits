@@ -140,9 +140,28 @@ To compile `backend.q` *as written*, in dependency order:
    Verified: `Twin { state subs: Vec<Sender>; handle Join(tx) { subs.push(tx) };
    handle Bump { for s in subs { s.send(99) } } }` with two subscribers — both
    receive 99.
-3. **`@channel_handler` + `Channel<S, R>`** — the rpc channel entry point: a
-   `pub fn` taking a bidirectional channel, served over wRPC. Rides #2c and the
-   component/wRPC export already wired in the manifest.
+3. **`@channel_handler` + `Channel<S, R>`** — the rpc channel entry point. This
+   is the **rpc/component/streams/runtime** layer, not a language feature like
+   1–2c: per `rpc.md`, `Channel<Tx, Rx>` is *sugar over a pair of WASIp3 streams*
+   (outbound `stream<Tx>` + inbound `stream<Rx>`) **served over wRPC**, so the
+   meaningful half (serving) is inherently component-model (preview3) + the
+   runtime transport adapter (`runtime/<host>/`), not pure codegen. Precise state:
+   - **annotation recognition** ✅ — `@http_handler` already compiles a
+     value-returning `pub fn` to an export; `@channel_handler` rides the same
+     annotation path.
+   - **void general exports** ⬜ — `join` is a *void* `pub fn`, which today routes
+     to the restrictive "screen handler" path (qview/state stmts only), not a
+     general library export.
+   - **`Channel<Tx, Rx>` param** ⬜ — a bidirectional endpoint = a *pair* of
+     channel buffers (send Tx, recv Rx); `session.send` / `for _tap in session`
+     would ride the channel machinery, but the param + dual representation is new.
+   - **module-level actor singleton** ⬜ — `let twin = Counter.spawn()` at module
+     scope (the per-project twin) is `NameNotFound` today.
+   - **paired-stream component emission + wRPC serving** ⬜ — the actual export as
+     a `stream<Tx>`/`stream<Rx>` world and the transport are component + runtime
+     work (the `runtime/wasmtime` host has no wRPC/stream adapter yet).
+   So the **whole twin language model compiles and runs** (1–2c); `@channel_handler`
+   is the serving boundary — a separate, larger, partly-runtime effort.
 4. ~~**for-in over a live channel/stream** (`for n in rx`)~~ — ✅ done. The
    remaining surface the handler body uses.
 
