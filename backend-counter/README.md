@@ -80,20 +80,13 @@ project page.
 
 ### Prefer a desktop terminal?
 
-Everything above also has a CLI form, for when you're working from a laptop
-instead of the dashboard. Clone the repo and build/run it against any WASIp3
-host:
+Same thing from a laptop — `qube run` is all you need:
 
 ```sh
 git clone https://github.com/qubepods/qubepods-examples.git
 cd qubepods-examples/backend-counter
-qube build --component
-wasmtime serve target/<host>/backend-counter.component.wasm   # open http://localhost:8080
+qube run
 ```
-
-`wasmtime serve` runs the `wasi:http` handler locally, so this is the one way
-to see the page serve **today**. The count lives in the host's own store for
-the life of the process — just you, and it resets when you stop the server.
 
 ## 3. How the shared count works
 
