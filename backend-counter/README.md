@@ -123,33 +123,6 @@ fn bump(delta: i64) -> i64 @kv {
 Because there's one backend per project and one count inside it, every browser
 pointed at the endpoint is reading and writing the same number.
 
-## Status & what's evolving
-
-This example is deliberately at the leading edge — it's both a demo and a
-spec for the pieces being finished. As of now:
-
-- **Working:** the q64 source (one `@http_handler`, `env.kv`) and component
-  emission to `wasi:http/proxy`; building it **on-device in the browser** (the
-  q64 compiler is itself wasm, iPad included) and serving it under a WASIp3
-  host. The backend-enabled project + its single per-project backend store
-  exist, and the project's `*.qubepod.app` route is shown on the project page.
-- **Being wired:** the **Run → public** last hop — deploying from the browser
-  and serving the project's `*.qubepod.app` route to the open internet so every
-  visitor hits the same backend; and binding the component's `wasi:keyvalue`
-  import to *that* project's store at boot (per-project, per-identity). Until
-  those land, **Run** builds, deploys, and previews for you, and `env.kv`
-  resolves to the host's default store. **This example is the thing we're using
-  to finish that hop.**
-- **On the roadmap:** a raw-SQL face (`env.db` → `wasi:sql`) over the same
-  per-project store, for examples that want tables and queries rather than a
-  single counter; and richer `wasi:http` `Request`/`Response` builders
-  (`req.method()`, `req.path()`, `Response.html`) firming up as standard
-  surface.
-
-If you're reading the q64 source and a constructor looks slightly ahead of
-what your toolchain ships, that's expected — this folder is one of the things
-driving those surfaces to completion.
-
 ---
 
 ## Files
