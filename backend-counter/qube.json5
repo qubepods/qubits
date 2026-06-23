@@ -3,7 +3,7 @@
   name: "qubepods.examples.backend_counter",
   version: "0.1.0",
   license: "MIT OR Apache-2.0",
-  description: "A shared click counter — the backend starter for qubepods. One Durable Object, one SQLite-backed count, every visitor sees the same number.",
+  description: "A shared click counter — the backend starter for qubepods. One backend per project, one shared count, every visitor sees the same number.",
   type: "application",
   entry: "src/main.q",
 
@@ -17,10 +17,9 @@
   },
 
   // The only capability this qube asks for: a key-value store (`env.kv`,
-  // i.e. `wasi:keyvalue`). qubepods binds that import to the project's
-  // Durable Object at boot, so the counter persists in the project's
-  // SQLite-backed store. `qube audit` will show exactly this and nothing
-  // more — no network, no filesystem.
+  // i.e. `wasi:keyvalue`). The host binds that import to the project's backend
+  // store at boot, so the counter persists. `qube audit` shows exactly this
+  // and nothing more — no network, no filesystem.
   effects: {
     declared: ["@kv"],
   },

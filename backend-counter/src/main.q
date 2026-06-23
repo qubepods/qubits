@@ -6,21 +6,18 @@
 //! click came from.
 //!
 //! The whole app is one `wasi:http` handler. qubepods serves it as the
-//! project's per-qube HTTPS endpoint. Because a backend-enabled project is
-//! anchored by a single Durable Object, every request lands on the same
-//! instance, and the count is kept in that DO's SQLite-backed store —
-//! reached here through the `env.kv` capability (which lowers to
-//! `wasi:keyvalue`). That host wiring — the qube's WASI import bound to the
-//! project's Durable Object — is the "WASI connection" this example exists
-//! to demonstrate.
+//! project's per-qube HTTPS endpoint. A backend-enabled project is anchored
+//! by a single backend instance, so every request lands on the same place and
+//! the count is kept in one shared store — reached here only through the
+//! `env.kv` capability (which lowers to `wasi:keyvalue`). Notice what this
+//! file does *not* name: no product, no cloud, no storage engine. It asks for
+//! a key-value capability; the host decides what answers. Binding that import
+//! to the project's store is the "WASI connection" this example demonstrates.
 //!
 //! Routes:
 //!   GET  /            -> the HTML page (button + live count)
 //!   GET  /api/count   -> the current count as plain text
 //!   POST /api/click   -> atomically add one, return the new count
-//!
-//! Build:  qube build --component
-//! Deploy: qube pod deploy           (into a backend-enabled project)
 //!
 //! See ../README.md for the full walkthrough.
 

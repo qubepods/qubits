@@ -12,7 +12,7 @@ can build with `qube` and deploy to a qubepods project.
 
 | Example | What it shows |
 |---------|---------------|
-| [**backend-counter**](./backend-counter/) | The backend starter. A page with a button and a shared count — one Durable Object, one SQLite-backed number, every visitor sees the same total. Demonstrates a backend-enabled project and the `env.kv` → `wasi:keyvalue` connection. |
+| [**backend-counter**](./backend-counter/) | The backend starter. A page with a button and a shared count — one backend per project, one number, every visitor sees the same total. Shows how to turn on a project backend and keep shared state behind a single capability. |
 
 ## Using an example
 

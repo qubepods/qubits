@@ -25,9 +25,8 @@ POST /api/click   → add one atomically, return the new count
 1. **Turning on a backend for a project** — the one switch that gives a
    project persistent, shared state.
 2. **A qube that paints its own UI and keeps its own state** — frontend and
-   backend are the same artifact.
-3. **The WASI connection** — how the qube's `env.kv` capability is wired to
-   the project's Durable Object so the count survives and is shared.
+   backend are the same artifact, with the count reached through one
+   capability (`env.kv`) and nothing else.
 
 ---
 
@@ -43,9 +42,9 @@ Turn it **on**. This is chosen once at creation and can't be flipped later —
 a project either has a backend twin or it doesn't, because turning one on
 later would be a data migration, not a toggle.
 
-A backend-enabled project is anchored by a single **Durable Object**. That's
+A backend-enabled project is anchored by a single **backend instance**. That's
 the whole trick behind "everyone shares this count": there is exactly one
-backend instance per project, its storage is SQLite, and every request to the
+backend per project, it has its own durable store, and every request to the
 project's endpoint lands on it.
 
 Without a backend, a project is static/stateless — fine for a brochure site,
@@ -72,10 +71,10 @@ project page.
 
 > **Public access is the part we're still building.** Pressing **Run** builds
 > and deploys the qube and gives you a live preview of the page. Wiring the
-> project's `*.qubepod.app` route so *anyone* on the open internet hits your
-> Durable Object — that last hop is in active development, and **this example
-> is the one we're using to get there.** When it lands, the steps above don't
-> change: same Run button, same route, now public.
+> project's `*.qubepod.app` route so *anyone* on the open internet reaches your
+> backend — that last hop is in active development, and **this example is the
+> one we're using to get there.** When it lands, the steps above don't change:
+> same Run button, same route, now public.
 
 ### Prefer a desktop terminal?
 
@@ -128,60 +127,8 @@ fn bump(delta: i64) -> i64 @kv {
   load it fetches `/api/count`, the button `POST`s to `/api/click`, and it
   polls every ~1.5s so clicks from *other* people show up on your screen too.
 
-Because there's one Durable Object per project and one count inside it, every
-browser pointed at the endpoint is reading and writing the same number.
-
-## 4. The WASI connection
-
-This is the part the example is really here to show.
-
-The qube never names "Durable Object," "SQLite," or "Cloudflare" anywhere. It
-only declares a capability:
-
-```json5
-// qube.json5
-effects: { declared: ["@kv"] }
-```
-
-`@kv` makes the compiler emit a `wasi:keyvalue` import into the component, and
-nothing else. You can see the qube's full, honest capability surface with:
-
-```sh
-qube audit
-# backend-counter wants: wasi:keyvalue   (no network, no filesystem)
-```
-
-When qubepods boots the component, the host **binds that `wasi:keyvalue`
-import to this project's Durable Object**. The qube calls `env.kv.increment`;
-the host turns that into an atomic write against the DO's SQLite-backed
-store. The qube is portable — the same bytes run under `wasmtime serve` on
-your laptop — and the host decides what `env.kv` actually *is*. The capability
-is the contract; the binding is the connection.
-
-That import-to-Durable-Object binding is the WASI connection the platform is
-building out, and this example is its smallest end-to-end exercise: a qube
-that asks for `wasi:keyvalue` and a project whose Durable Object answers.
-
-### Why you write this in public
-
-This is an open repo. You're meant to pull it, read it, and run it — and that
-is exactly the point of declaring capabilities the way q64 does.
-
-The `@kv` line isn't a promise you have to take on faith. It's a fact you can
-check. Because both the source and the manifest are public, anyone — a
-teammate, a stranger, or an AI agent about to compose this qube into something
-larger — can read `qube.json5`, run `qube audit`, and see the whole truth:
-this thing wants a key-value store and *nothing else*. No network to ship the
-count somewhere, no filesystem, no surprise calls. If it tried to reach the
-network, the manifest would have to say `@network`, and `qube audit` would show
-it — before anyone ran a line.
-
-That's the opposite of "trust our sandbox." The wasm artifact **is** the
-boundary, and the boundary is in the open: you trust the code because you can
-see its declared shape, not because something promises to contain it. Shipping
-examples in public isn't a marketing nicety here — public, auditable
-capabilities are the security model. A counter is a small thing to audit; the
-habit is the point.
+Because there's one backend per project and one count inside it, every browser
+pointed at the endpoint is reading and writing the same number.
 
 ## Status & what's evolving
 
@@ -191,17 +138,17 @@ spec for the pieces being finished. As of now:
 - **Working:** the q64 source (one `@http_handler`, `env.kv`) and component
   emission to `wasi:http/proxy`; building it **on-device in the browser** (the
   q64 compiler is itself wasm, iPad included) and serving it under a WASIp3
-  host. The backend-enabled project + single Durable Object + SQLite storage
+  host. The backend-enabled project + its single per-project backend store
   exist, and the project's `*.qubepod.app` route is shown on the project page.
 - **Being wired:** the **Run → public** last hop — deploying from the browser
   and serving the project's `*.qubepod.app` route to the open internet so every
-  visitor hits the same Durable Object; and binding the component's
-  `wasi:keyvalue` import to *that* project's DO at boot (per-project,
-  per-identity). Until those land, **Run** builds, deploys, and previews for
-  you, and `env.kv` resolves to the host's default store. **This example is the
-  thing we're using to finish that hop.**
+  visitor hits the same backend; and binding the component's `wasi:keyvalue`
+  import to *that* project's store at boot (per-project, per-identity). Until
+  those land, **Run** builds, deploys, and previews for you, and `env.kv`
+  resolves to the host's default store. **This example is the thing we're using
+  to finish that hop.**
 - **On the roadmap:** a raw-SQL face (`env.db` → `wasi:sql`) over the same
-  Durable Object, for examples that want tables and queries rather than a
+  per-project store, for examples that want tables and queries rather than a
   single counter; and richer `wasi:http` `Request`/`Response` builders
   (`req.method()`, `req.path()`, `Response.html`) firming up as standard
   surface.
