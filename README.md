@@ -16,11 +16,12 @@ can build with `qube` and deploy to a qubepods project.
 
 ## Using an example
 
-Each example is a normal qube. From its folder:
+Each example is a normal qube. Open your project in **Qubonaut**
+(`app.qubepods.com`), clone this repo in its terminal, and from the example's
+folder:
 
 ```sh
-qube build --component     # build the wasm component
-qube pod deploy            # deploy into one of your qubepods projects
+qube run
 ```
 
 See the example's own README for what it does and which kind of project it

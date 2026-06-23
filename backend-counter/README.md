@@ -47,9 +47,6 @@ the whole trick behind "everyone shares this count": there is exactly one
 backend per project, it has its own durable store, and every request to the
 project's endpoint lands on it.
 
-Without a backend, a project is static/stateless — fine for a brochure site,
-but two visitors would never see a shared number.
-
 ## 2. Run it — in the browser (no desktop needed)
 
 You don't need a desktop, a local toolchain, or even a laptop. qubepods is
@@ -68,22 +65,18 @@ there, so there's no login step and no token to save.
 
    Qubonaut has a built-in terminal with `git` (it talks to GitHub over the
    API, so it works on iPad too — no desktop git needed).
-3. Press **Run**.
+3. Run it:
 
-That's it. Pressing **Run** builds the qube to WebAssembly on-device (the q64
-compiler itself is wasm, so it works on iPad Safari) and deploys it onto the
-project. No `qube build`, no `qube pod login`, no `qube pod deploy` — those are
-the desktop-CLI spellings of what the **Run** button does for you.
+   ```sh
+   qube run
+   ```
+
+   `qube run` compiles the qube to WebAssembly on-device — the q64 compiler is
+   itself wasm, so this works on iPad Safari. You're already signed in, so
+   there's no separate login.
 
 Your project already has its address on **`*.qubepod.app`**, shown on the
 project page.
-
-> **Public access is the part we're still building.** Pressing **Run** builds
-> and deploys the qube and gives you a live preview of the page. Wiring the
-> project's `*.qubepod.app` route so *anyone* on the open internet reaches your
-> backend — that last hop is in active development, and **this example is the
-> one we're using to get there.** When it lands, the steps above don't change:
-> same Run button, same route, now public.
 
 ### Prefer a desktop terminal?
 
@@ -98,11 +91,9 @@ qube build --component
 wasmtime serve target/<host>/backend-counter.component.wasm   # open http://localhost:8080
 ```
 
-Run this way the count lives in the host's own store for the life of the
-process — just you, and it resets when you stop the server. Deploying to a
-project from the CLI (`qube pod login` then `qube pod deploy`) is the desktop
-counterpart to the **Run** button, and rides the same in-progress public-route
-work noted above.
+`wasmtime serve` runs the `wasi:http` handler locally, so this is the one way
+to see the page serve **today**. The count lives in the host's own store for
+the life of the process — just you, and it resets when you stop the server.
 
 ## 3. How the shared count works
 
