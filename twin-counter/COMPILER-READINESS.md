@@ -129,13 +129,25 @@ To compile `backend.q` *as written*, in dependency order:
    forms, so it's unaffected.)
 2c. **Actor state as a collection + Sender-typed handler params** — the last
    layer to wire 2b *into the actor*: `state subs: Vec<Sender<…>>` and
-   `handle Join(tx: Sender<…>)`. Today an actor's `state` fields are **scalar
-   only** — the struct builder runs each field type through `semaScalar`, which
-   rejects `Vec<T>`, so an actor with a Vec field isn't even registered
-   (`NameNotFound`). Needs: a Vec/ptr state field (a header pointer in the state
-   record, with `state.subs.push` / `for s in state.subs` resolving through it),
-   and a `Sender`-typed handler param accepted as i64 (a sender value). The
-   fan-out primitives (2b) all exist — this is the integration into actor state.
+   `handle Join(tx: Sender<…>)`. Sub-pieces (qualified `state.<field>` access ✅
+   done — `state.n` reads/writes now resolve to `self.n`). Remaining, ~6
+   integration points around one new representation (*a Vec stored in a record
+   field* = the field holds the Vec header pointer):
+   - **struct builder** — accept a `Vec<T>` (and `Sender<T>`) state field as a
+     `.ptr` field (today `semaScalar` rejects it → the actor isn't registered →
+     `NameNotFound`).
+   - **default init** — `= Vec.new()` builds a `vec_new` stored in the field
+     (the `C {}` / `Actor.spawn()` paths use `buildIntExpr` for defaults, which
+     rejects `Vec.new()`).
+   - **`state.subs.push(x)`** — resolve `state.subs` to the field's Vec pointer
+     and `vec_push` onto it (extend `tryVecPush`, which today only knows
+     `scope.vecs` locals).
+   - **`for s in state.subs`** — iterate the field's Vec (same field-pointer
+     resolution in the for-in source).
+   - **`Sender`-typed handler param** — accept it as i64 (a sender value) in
+     `registerActorHandler` (today params must be `bool`/`i64`/`f64`/`f32`).
+   The fan-out primitives (2b) all run standalone; this slice routes the vec ops
+   through an actor state field. It's the biggest single remaining piece.
 3. **`@channel_handler` + `Channel<S, R>`** — the rpc channel entry point: a
    `pub fn` taking a bidirectional channel, served over wRPC. Rides #2c and the
    component/wRPC export already wired in the manifest.
