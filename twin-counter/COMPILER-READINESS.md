@@ -104,9 +104,24 @@ To compile `backend.q` *as written*, in dependency order:
    `(key_ptr, key_len, delta)`; the host store is a `map<str,i64>`. The twin's
    `bump()`/`read()` on `"count"` compile and run (verified: `1,2,2,3`).
 2. **Message-style actors** — `handle Msg(payload) { … }` + `actor.tell(Msg(x))`
-   + `Actor.spawn()`, lowering the message enum + a serial dispatch. `check.zig`
-   already validates this surface (`handle Get -> i64`); codegen is the gap.
-   This is the largest language piece.
+   + `Actor.spawn()`. **This is a parser/AST gap, not just codegen** (verified):
+   - `tell` is a reserved keyword (`KW_TELL`) that the **parser never lowers**.
+     The actor body "parses raw" — `check.zig` validates `handle`/`tell` by
+     scanning the flat token stream (the CONC020 `tell`-on-a-reply lint), but
+     `tell` never becomes a structured AST node, so `c.tell(Msg)` can't reach
+     `build_hir` as a call (it hits `buildMainExprStmt`'s "not a `.call`" path).
+     Closing it needs a `tell` expression in `parse.zig`/`ast.zig` first, *then*
+     the dispatch lowering (which is small — handlers already lower to
+     self-taking functions, exactly like method-style `c.bump()`).
+   - `ask` is *not* a keyword, so `c.ask(Msg)` already parses as a method call;
+     the value-handler dispatch (`handle Get -> i64` ↔ `c.ask(Get)`) is a
+     codegen-only add. But the twin uses `tell`, not `ask`.
+   - Independently, the twin's `backend.q` doesn't pass `q64 check` yet
+     (`CONC050 channel policy required` on the `channel<…>()` in `join`), so the
+     source needs the channel-policy fix too.
+   So message-style actors are the **largest** remaining piece and span lexer/
+   parser/AST + codegen — a language-design step (the `tell` grammar, currently
+   unspecified in `concurrency.md`), not a codegen patch.
 3. **`@channel_handler` + `Channel<S, R>`** — the rpc channel entry point: a
    `pub fn` taking a bidirectional channel, served over wRPC. Rides #2 and the
    component/wRPC export already wired in the manifest.
