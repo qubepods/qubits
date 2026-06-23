@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 280" width="1200" height="280" role="img" aria-label="qubepods examples — pull a Qube, deploy it, share one URL">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0c0f16"/>
+      <stop offset="1" stop-color="#0b0d12"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.16" cy="0.5" r="0.6">
+      <stop offset="0" stop-color="#5b8cff" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#5b8cff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect x="1" y="1" width="1198" height="278" rx="22" fill="url(#bg)" stroke="#1c2230" stroke-width="2"/>
+  <rect x="1" y="1" width="1198" height="278" rx="22" fill="url(#glow)"/>
+
+  <!-- isometric qube -->
+  <g transform="translate(60,70)">
+    <polygon points="90,0 142,30 90,60 38,30" fill="#9cc0ff"/>
+    <polygon points="38,30 90,60 90,120 38,90" fill="#5b8cff"/>
+    <polygon points="90,60 142,30 142,90 90,120" fill="#3f63c4"/>
+  </g>
+
+  <!-- wordmark -->
+  <text x="270" y="138" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="62" font-weight="800" letter-spacing="-1">
+    <tspan fill="#ffffff">qubepods</tspan><tspan fill="#8ab4ff"> examples</tspan>
+  </text>
+
+  <!-- tagline -->
+  <text x="272" y="186" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="24" font-weight="500" fill="#7b8194">
+    Pull a Qube, deploy it, share one URL.
+  </text>
+
+  <!-- route hint, monospace -->
+  <text x="272" y="226" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="17" fill="#5d6273">
+    qube pod deploy  →  https://your-app.qubepod.app
+  </text>
+</svg>
