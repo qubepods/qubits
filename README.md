@@ -12,7 +12,7 @@ can build with `qube` and deploy to a qubepods project.
 
 | Example | What it shows |
 |---------|---------------|
-| [**backend-counter**](./backend-counter/) | The backend starter. A page with a button and a shared count — one backend per project, one number, every visitor sees the same total. Shows how to turn on a project backend and keep shared state behind a single capability. |
+| [**twin-counter**](./twin-counter/) | The backend starter. A page with a button and a shared count, built as a **twin** — one frontend wasm renders the screen, one backend wasm holds the count for everyone. Shows how to turn on a project backend and share state with a single `@state(app)`. |
 
 ## Using an example
 
