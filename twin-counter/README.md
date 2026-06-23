@@ -124,5 +124,5 @@ and it's the same shape every qubepods backend uses.
 | File | What it is |
 |------|------------|
 | [`counter.q`](./counter.q) | The frontend screen you write — a button, a number, one `@state(app)`. |
-| [`twin.q`](./twin.q) | The backend twin, generated from `@state(app)` — owns the shared `count`. |
+| [`twin.q`](./twin.q) | What the backend twin runs — the other placement of `@state(app)`, owning the shared `count`. |
 | [`qube.json5`](./qube.json5) | Manifest: the frontend application qube. |
