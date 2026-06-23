@@ -28,14 +28,17 @@ cross-qube story is the component model + wRPC, driven by the `rpc` block in
 | `move tx` / `ref x` | ownership qualifiers | ✅ runs (v0 identity — no borrow tracking yet) |
 | `for n in rx` | recv loop over a channel | ✅ runs (drains the buffer in order) |
 | `actor Counter { state subs: Vec<Sender> … handle Join(tx) handle Bump }` + `tell`/`ask`/`spawn` | **message-style** actor + **live fan-out** | ✅ runs — `state subs: Vec<Sender>`, `handle Join(tx: Sender<…>) { state.subs.push(tx) }`, `handle Bump { for s in state.subs { s.send(n) } }`; two subscribers both receive the broadcast |
-| `@channel_handler pub fn join(session: Channel<i64, Tap>)` | rpc channel entry point | ⬜ gap (the channel-handler attribute + `Channel<S,R>` param) |
+| `let twin = Counter.spawn()` **at module level** | one module-lifetime singleton (HOST SEAM 1) | ✅ runs — allocated once by the wasm `start`, self-pointer kept in a module global; every `twin.tell/ask` shares the one instance (`ping()` → 1, 2, 3 verified) |
+| `handle Bump @kv` / `handle Join(tx) @kv` (effect spec on a handler) | declared effect set on a handler | ✅ runs — the trailing `@kv` no longer orphans the body; the whole backend **minus** the `@channel_handler` now emits to wasm |
+| `@channel_handler pub fn join(session: Channel<i64, Tap>)` | rpc channel entry point | ⬜ gap (the channel-handler attribute + `Channel<S,R>` param + host-backed `session.send` / `for _ in session`) |
 | `channel<i64>(policy: Unbounded)`, `tx.send`, `rx.recv` | in-process channel | ✅ runs (passes `check` + emits) |
 | `for n in rx` / `for _tap in session` | for-in over a channel/stream | 🟡 for-in over a Vec runs; over a live channel/stream is a gap |
 | `move tx` | move semantics | ⬜ gap |
 
 ### What landed recently (q64-lang/q64)
 
-Four codegen slices, each tested end-to-end on the wasmtime host:
+Codegen slices, each tested end-to-end (`q64 emit` + the wasmtime host / a wasm
+instantiation test):
 
 1. **`env.kv.increment`** → an `env.kv_increment` host import (`wasi:keyvalue`),
    marks the fn `@kv`. Returns a boxed **`Result<i64,i64>`**, so the twin's
@@ -46,6 +49,15 @@ Four codegen slices, each tested end-to-end on the wasmtime host:
    `main`, a `for` body, or an `if` body.
 4. (`env.kv` + `Vec.new` together cover the backend's persistence + fan-out
    *data flow*; the actor/channel/rpc *control flow* is the remaining work.)
+5. **module-level actor singleton** (`let twin = Counter.spawn()`, HOST SEAM 1)
+   — the instance's state record is allocated once by a synthesized wasm `start`
+   function and its self-pointer kept in a module global, so the shared state is
+   module-lifetime and every `twin.tell/ask` in any function reaches the one
+   instance. Verified end to end (`ping()` → 1, 2, 3).
+6. **effect spec on a handler** (`handle Bump @kv { … }`) — a trailing
+   `@marker (+ @marker)*` after the handler signature is parsed like a `fn`'s,
+   so it no longer orphans the body. With 5 + 6, the actor + kv-store + fan-out
+   half of the twin (everything but the `@channel_handler` entry point) emits.
 
 ## The cross-qube wire — the actual mechanism
 
