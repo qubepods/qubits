@@ -24,10 +24,10 @@ cross-qube story is the component model + wRPC, driven by the `rpc` block in
 | `Vec.new()` + `.push` + `for tx in …` | growable Vec + iteration | ✅ runs (the empty growable + fan-out loop) |
 | `spawn { … }` (fire-and-forget) | cooperative task, eager v0 | ✅ runs (main / `for` / `if` bodies) |
 | method-style actor (`var c = C{}`, `c.m()`) | actor = self-taking fns | ✅ runs |
-| `Vec<Sender<…>>` (a Vec of senders) | Vec of a non-i64 element | 🟡 i64 Vec runs; non-scalar element types are the v0 boundary |
+| `Vec<Sender<…>>` (a Vec of senders) | Vec holding channel **endpoints** | ⬜ gap — the *Senders-as-values* subsystem (see path-forward #2) |
 | `actor Counter { … handle Bump handle Add(x) }` + `c.tell(Msg)` / `c.ask(Msg)` / `Counter.spawn()` | **message-style** actor dispatch | ✅ runs for scalar payloads (`tell(Bump)`, `tell(Add(5))`, `ask(Get)`, `spawn()`); non-scalar payloads (`Join(Sender)`) ride the `Vec<Sender>`/`move` gaps |
 | `@channel_handler pub fn join(session: Channel<i64, Tap>)` | rpc channel entry point | ⬜ gap (the channel-handler attribute + `Channel<S,R>` param) |
-| `channel<i64, Unbounded>()`, `tx.send`, `rx.recv` | in-process channel | ✅ runs |
+| `channel<i64>(policy: Unbounded)`, `tx.send`, `rx.recv` | in-process channel | ✅ runs (passes `check` + emits) |
 | `for n in rx` / `for _tap in session` | for-in over a channel/stream | 🟡 for-in over a Vec runs; over a live channel/stream is a gap |
 | `move tx` | move semantics | ⬜ gap |
 
@@ -111,15 +111,33 @@ To compile `backend.q` *as written*, in dependency order:
    like `Vec.from`'s `KW_FROM`), then dispatching in `build_hir`: `c.tell(Bump)`
    → the `Bump` handler, `c.tell(Add(5))` → `Add` with the payload, `c.ask(Get)`
    → the value handler, `Counter.spawn()` → the default-state record. Runs
-   end-to-end (a counter actor: tells, payload, ask, spawn). **Remaining for the
-   twin specifically:** the payloads are non-scalar (`Join(tx: Sender<…>)`,
-   `move tx`), which ride the `Vec<Sender>` / `move` gaps below, and the twin's
-   `backend.q` still doesn't pass `q64 check` (`CONC050 channel policy required`
-   on the `join` channel).
+   end-to-end (a counter actor: tells, payload, ask, spawn). The twin's payloads
+   are non-scalar (`Join(tx: Sender<…>)`, `move tx`) — those ride #2b.
+   ~~`CONC050`~~ ✅ also fixed: `channel<i64>(policy: Unbounded)` (the policy is an
+   argument, not a type param), so `backend.q` now passes `q64 check` cleanly.
+
+2b. **Senders as first-class values** — the deep, still-open subsystem the twin
+   leans on (`state subs: Vec<Sender<…>>`, `subs.push(move tx)`, `Join(tx)`,
+   `for tx in subs { tx.send(n) }`). Today a `Sender`/`Receiver` is a **scope
+   binding** (`scope.chans`: a Vec buffer + a read cursor), *not* a value — so it
+   can't be pushed into a Vec, moved, or carried in a message. The architecture
+   to close it (a coherent change across the channel/Vec/move systems):
+   - A `Sender` value **is** its channel buffer pointer (i64). Make a sender
+     binding coerce to that pointer in value position, so `Vec<Sender>` reuses
+     the existing i64 Vec (a vec of buffer pointers).
+   - `tx.send(n)` already pushes onto the buffer; make `.send` work on a sender
+     **value** (a buffer pointer from a Vec element / a payload), not only a
+     `scope.chans` binding.
+   - `move tx` → yield the sender's buffer pointer as that value (v0: move is the
+     value, no borrow tracking yet).
+   - Message payloads + `for tx in subs` then carry/iterate sender pointers and
+     `tx.send` dispatches on them. This is ~a few hundred lines spanning
+     `tryChannelSend`, the Vec element path, `move`, and the message-payload
+     path — a real slice, not a one-liner.
 3. **`@channel_handler` + `Channel<S, R>`** — the rpc channel entry point: a
-   `pub fn` taking a bidirectional channel, served over wRPC. Rides #2 and the
+   `pub fn` taking a bidirectional channel, served over wRPC. Rides #2b and the
    component/wRPC export already wired in the manifest.
-4. **for-in over a live channel/stream** (`for n in rx`) and **`move`** — the
+4. **for-in over a live channel/stream** (`for n in rx`) — the
    remaining surface the handler body uses.
 
 A **compiles-today** backend (keyless `env.kv`, method-style actor, i64 Vec,
