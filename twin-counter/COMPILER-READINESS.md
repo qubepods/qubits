@@ -30,10 +30,13 @@ cross-qube story is the component model + wRPC, driven by the `rpc` block in
 | `actor Counter { state subs: Vec<Sender> … handle Join(tx) handle Bump }` + `tell`/`ask`/`spawn` | **message-style** actor + **live fan-out** | ✅ runs — `state subs: Vec<Sender>`, `handle Join(tx: Sender<…>) { state.subs.push(tx) }`, `handle Bump { for s in state.subs { s.send(n) } }`; two subscribers both receive the broadcast |
 | `let twin = Counter.spawn()` **at module level** | one module-lifetime singleton (HOST SEAM 1) | ✅ runs — allocated once by the wasm `start`, self-pointer kept in a module global; every `twin.tell/ask` shares the one instance (`ping()` → 1, 2, 3 verified) |
 | `handle Bump @kv` / `handle Join(tx) @kv` (effect spec on a handler) | declared effect set on a handler | ✅ runs — the trailing `@kv` no longer orphans the body; the whole backend **minus** the `@channel_handler` now emits to wasm |
-| `@channel_handler pub fn join(session: Channel<i64, Tap>)` | rpc channel entry point | ⬜ gap (the channel-handler attribute + `Channel<S,R>` param + host-backed `session.send` / `for _ in session`) |
+| `@channel_handler pub fn join(session: Channel<i64, Tap>)` | rpc channel entry point | ✅ **emits** — the attribute routes `join` through the full void-body builder, exported by name; the `Channel<Tx, Rx>` session is an i64 handle. **The whole `backend.q` now emits to wasm as written** (imports: `env.kv_increment`, `env.channel_recv`, `env.channel_send`) |
+| `session.send(x)` | outbound half of the session | ✅ runs — lowers to the `env.channel_send(handle, x)` host call (verified: one send per inbound message) |
+| `for _tap in session { … }` | inbound half of the session | ✅ runs — lowers to `while chan_recv(session) != 0 { … }` (`env.channel_recv`: 1 = message, 0 = closed); the v0 Rx payload is empty (`Tap`) so the binder is ignored |
 | `channel<i64>(policy: Unbounded)`, `tx.send`, `rx.recv` | in-process channel | ✅ runs (passes `check` + emits) |
-| `for n in rx` / `for _tap in session` | for-in over a channel/stream | 🟡 for-in over a Vec runs; over a live channel/stream is a gap |
-| `move tx` | move semantics | ⬜ gap |
+| `for n in rx` | for-in over a channel | ✅ runs (drains the buffer in order) |
+| `move tx` | move semantics | ✅ runs (v0 identity) |
+| `spawn { for n in rx { session.send(n) } }` (the outbound **pump**) | live re-broadcast | 🟡 emits, but **eager** v0 (drains `rx` once); live interleaving with the tap loop is the runtime ABI's job (the DO drives the pump + recv concurrently) |
 
 ### What landed recently (q64-lang/q64)
 
@@ -58,6 +61,19 @@ instantiation test):
    `@marker (+ @marker)*` after the handler signature is parsed like a `fn`'s,
    so it no longer orphans the body. With 5 + 6, the actor + kv-store + fan-out
    half of the twin (everything but the `@channel_handler` entry point) emits.
+7. **`@channel_handler` + the host-backed remote channel session** — a
+   `pub fn` carrying `@channel_handler` is a channel entry point taking one
+   `Channel<Tx, Rx>` session (an i64 handle). `for _ in session` lowers to
+   `while chan_recv(session) != 0 { … }` (the `env.channel_recv` import: 1 =
+   inbound message, 0 = closed) and `session.send(x)` to the `env.channel_send`
+   host call — a v0 host-import seam parallel to `env.kv` (the spec's eventual
+   lowering is paired WASIp3 streams). The handler builds through the full
+   void-callee machinery, so `let (tx, rx) = channel(…)`, `spawn`, `twin.tell`,
+   and the session loop all compile. **With 1–7 the entire `backend.q` emits to
+   wasm as written**; instantiated with a stub host, a channel handler sends
+   once per inbound message and stops on close. The one remaining behavioural
+   gap is the **eager** outbound pump (see the table) — correct live
+   re-broadcast is the runtime ABI (the DO interleaves pump + recv).
 
 ## The cross-qube wire — the actual mechanism
 
