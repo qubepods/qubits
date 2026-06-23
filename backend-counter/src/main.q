@@ -89,6 +89,9 @@ fn page() -> str {
     button:hover { filter: brightness(1.08); }
     button:active { transform: translateY(1px) scale(0.985); }
     p.note { margin: 1.75rem 0 0; font-size: 0.85rem; color: #5d6273; max-width: 24rem; }
+    footer { margin-top: 2.5rem; font-size: 0.8rem; color: #5d6273; }
+    footer a { color: #8ab4ff; text-decoration: none; font-weight: 600; }
+    footer a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
@@ -100,6 +103,10 @@ fn page() -> str {
       The number lives in this project's backend. Open this page on another
       device and watch it move when anyone clicks.
     </p>
+    <footer>
+      Deploy your own backend in seconds at
+      <a href="https://qubepods.com">qubepods.com</a>
+    </footer>
   </main>
   <script>
     const el = document.getElementById('count');
