@@ -61,9 +61,13 @@ qube pod deploy         # build the component + upload it to your project
 ```
 
 `qube pod deploy` builds the `wasi:http/proxy` component (the same as
-`qube build --component`) and uploads it. qubepods serves it at your
-project's HTTPS endpoint. Visit that URL and you'll see the page; click the
-button and the number goes up — for everyone.
+`qube build --component`) and uploads it. qubepods gives the project a
+subdomain on **`*.qubepod.app`** — that's its public HTTPS endpoint. Visit
+that URL and you'll see the page; click the button and the number goes up —
+for everyone on that URL.
+
+Nothing else to pull or configure: the qube serves the page and holds the
+count, and the `*.qubepod.app` address is the one link you share.
 
 You can also try it locally with any WASIp3 host:
 
