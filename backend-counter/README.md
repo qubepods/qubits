@@ -51,35 +51,18 @@ project's endpoint lands on it.
 Without a backend, a project is static/stateless — fine for a brochure site,
 but two visitors would never see a shared number.
 
-## 2. Deploy this qube into the project
+## 2. Get the example
 
-Open a console and clone this examples repo, then `cd` into this example:
+Open a console, clone this examples repo, and `cd` into this example:
 
 ```sh
 git clone https://github.com/qubepods/qubepods-examples.git
 cd qubepods-examples/backend-counter
 ```
 
-From that directory:
+### To run it (locally)
 
-```sh
-qube pod login          # once, to save your qubepods token
-qube pod deploy         # build the component + upload it to your project
-```
-
-(If you have more than one project, `qube pod deploy` will ask which one to
-deploy into — pick the backend-enabled project you made in step 1.)
-
-`qube pod deploy` builds the `wasi:http/proxy` component (the same as
-`qube build --component`) and uploads it. qubepods gives the project a
-subdomain on **`*.qubepod.app`** — that's its public HTTPS endpoint. Visit
-that URL and you'll see the page; click the button and the number goes up —
-for everyone on that URL.
-
-Nothing else to pull or configure: the qube serves the page and holds the
-count, and the `*.qubepod.app` address is the one link you share.
-
-You can also try it locally with any WASIp3 host:
+Build the component and serve it with any WASIp3 host:
 
 ```sh
 qube build --component
@@ -87,9 +70,28 @@ wasmtime serve target/<host>/backend-counter.component.wasm
 # open http://localhost:8080
 ```
 
-Run locally, the count is held in the host's own key-value store for the life
-of the process. On qubepods, it's held in your project's Durable Object and
-persists.
+Run this way, the count lives in the host's own key-value store for the life
+of the process — great for trying it, but it's just you, and it resets when
+you stop the server.
+
+### To deploy it (to qubepods)
+
+Log in once, then deploy into the backend-enabled project from step 1:
+
+```sh
+qube pod login          # once, to save your qubepods token
+qube pod deploy         # build the component + upload it to your project
+```
+
+(If you have more than one project, `qube pod deploy` asks which one — pick
+the backend-enabled project you made in step 1.)
+
+qubepods gives the project a subdomain on **`*.qubepod.app`** — its public
+HTTPS endpoint. Visit that URL and you'll see the page; click the button and
+the number goes up for **everyone** on that URL, because now the count lives
+in the project's Durable Object instead of a local process. That one
+`*.qubepod.app` address is the only link you share — nothing else to pull or
+configure.
 
 ## 3. How the shared count works
 
