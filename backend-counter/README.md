@@ -53,12 +53,22 @@ but two visitors would never see a shared number.
 
 ## 2. Deploy this qube into the project
 
-From this directory:
+Open a console and clone this examples repo, then `cd` into this example:
+
+```sh
+git clone https://github.com/qubepods/qubepods-examples.git
+cd qubepods-examples/backend-counter
+```
+
+From that directory:
 
 ```sh
 qube pod login          # once, to save your qubepods token
 qube pod deploy         # build the component + upload it to your project
 ```
+
+(If you have more than one project, `qube pod deploy` will ask which one to
+deploy into — pick the backend-enabled project you made in step 1.)
 
 `qube pod deploy` builds the `wasi:http/proxy` component (the same as
 `qube build --component`) and uploads it. qubepods gives the project a
