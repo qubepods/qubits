@@ -1,0 +1,36 @@
+{
+  "$schema": "https://q64.dev/schema/qube.json5",
+  "name": "cube",
+  "version": "0.0.0",
+  "license": "MIT OR Apache-2.0",
+  "type": "application",
+  "entry": "main.q",
+  // Dependencies — two kinds:
+  //
+  // 1. `test.color` — a LOCAL-PATH library qube (sibling `./color`). `qube build`
+  //    links it via `q64 emit --module test.color=<path>/src`. main.q calls
+  //    `test.color.random_color(seed)` from its tap handler — a real cross-qube
+  //    scalar call. (This makes the app multi-qube: it no longer compiles as a
+  //    single standalone file — see README "Run it".)
+  //
+  // 2. `com.qubeworlds.quine` — the quine 3D ENGINE, resolved from the Continuum
+  //    registry. This is NOT a linked q64 module (the engine is a foreign WIT
+  //    component + a CDN wasm bundle, with no `src/lib.q`): declaring it is what
+  //    turns 3D ON. Qubonaut resolves the pin against the Continuum, host-mounts
+  //    the engine from the CDN, and verifies it against `quine_version()`. Omit
+  //    this dependency and the same qube renders without 3D.
+  "dependencies": {
+    "test.color": { "path": "./color" },
+    "com.qubeworlds.quine": "^0.1"
+  },
+  // 3D content this project owns (NOT the engine/framework — see CLAUDE rules:
+  // the engine is content-agnostic; meshes are the project's data). The host
+  // reads this manifest, loads the scene + assets from the project, and feeds
+  // them to the engine. main.q's `scene` node (scene_id 0) renders `game.scene`.
+  "game": {
+    "scene": "scene.json",
+    "assets": [
+      { "name": "cube", "path": "assets/cube.glb" }
+    ]
+  }
+}

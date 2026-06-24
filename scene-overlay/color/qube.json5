@@ -1,0 +1,9 @@
+{
+  "$schema": "https://q64.dev/schema/qube.json5",
+  "name": "test.color",
+  "version": "0.0.0",
+  "license": "MIT OR Apache-2.0",
+  "description": "A tiny library qube: random_color(seed) -> a packed 0xAARRGGBB color.",
+  "type": "library",
+  "entry": "src/lib.q",
+}

@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "name": "cube",
+  "entities": [
+    {
+      "name": "cube",
+      "geometry": { "kind": "gltf", "source": "cube" },
+      "material": { "color": [0.30, 0.62, 1.0, 1.0], "metallic": 0.0, "roughness": 0.55 },
+      "spin": { "velocity": [0.35, 0.7, 0.0] }
+    },
+    { "name": "key", "light": { "kind": "directional", "direction": [-0.4, -0.8, -0.5], "color": [1, 1, 1], "intensity": 1.3 } },
+    { "name": "sky", "environment": { "sky": { "zenith": [0.03, 0.05, 0.09], "horizon": [0.08, 0.11, 0.18] }, "ambient": { "color": [0.40, 0.50, 0.70], "intensity": 0.5 } } },
+    { "name": "camera", "transform": { "position": [2.1, 1.4, 3.5] }, "camera": { "controller": { "kind": "orbit", "target": [0, 0, 0], "distance": 3.5, "yaw": 0.6, "pitch": 0.25 } } }
+  ]
+}

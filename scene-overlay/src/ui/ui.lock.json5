@@ -1,0 +1,13 @@
+{
+  // QView component-registry lockfile (spec/qview-ui-registry.md). Records each
+  // vendored component + the PROTOCOL_VERSION it targets, so a protocol append
+  // flags a stale copy rather than breaking silently. You OWN these files.
+  protocol: "1.11",
+  source: "q64.view.registry",
+  components: {
+    proto:         { files: ["proto.q"] },
+    card:          { files: ["card.q"],          requires: ["proto"] },
+    // a "block" — a whole composed section: a 3D scene with a form on top
+    scene_overlay: { files: ["scene_overlay.q"], requires: ["proto", "card"] },
+  },
+}
