@@ -1,10 +1,13 @@
 # blackbird — a static-asset qube (chess in the browser)
 
 A full chess game you play in the browser — board, rules, and engine — shipped
-as **static files**. The engine is a **Rust chess engine compiled to
-WebAssembly**; there is no q64 source to compile and no backend. The whole qube
-is the `web/` folder, served as-is. It's the example for bringing a hand-written
-web app (HTML/CSS/JS + whatever wasm it loads) to qubepods **unchanged**.
+as **static files**. The engine is a **high-performance Rust chess engine
+compiled to WebAssembly** (magic bitboards, transposition table, quiescence
+search) that runs **entirely in the browser, at near-native speed** — the search
+happens on your device, off the main thread in a Web Worker, with **no server**.
+There is no q64 source to compile and no backend; the whole qube is the `web/`
+folder, served as-is. It's the example for bringing a hand-written web app
+(HTML/CSS/JS + whatever wasm it loads) to qubepods **unchanged**.
 
 ## What it shows
 
@@ -77,7 +80,12 @@ native language, but it is not a requirement; bring any wasm and qubepods serves
 it the same way.
 
 This example is the **client-side** rung of that interoperability: the Rust wasm
-is a static asset the browser runs, with no server component. The **deeper** rung
+is a static asset the browser runs, with no server component. Worth making
+explicit, because it surprises people — **a serious, native-grade engine runs
+right in the browser.** The same Rust that would compile to a desktop binary
+compiles to WebAssembly and searches at near-native speed on the user's device;
+qubepods just hands the file to the page. No game server, no API round-trip, no
+GPU — the engine *is* the page. The **deeper** rung
 is composition — the same Rust engine can compile to a **WIT component** (the
 [WebAssembly Component Model](https://component-model.bytecodealliance.org/)) that
 a q64 qube *calls* over wRPC or links with `wac`, with q64 as the orchestrator and
