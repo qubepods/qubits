@@ -1,0 +1,29 @@
+{
+  "$schema": "https://q64.dev/schema/qube.json5",
+  "name": "qube-rocks",
+  "version": "0.0.0",
+  "license": "MIT OR Apache-2.0",
+  "type": "application",
+  "entry": "main.q",
+
+  // No backend — Qube Rocks is pure client: the whole game (steering, firing,
+  // rock splitting) runs in the quine engine's deterministic skill (a fixed-step
+  // simulation), with no server, no database, no wRPC.
+  "dependencies": {
+    // The quine 3D ENGINE, resolved from the Continuum registry. Declaring it is
+    // what turns 3D on: the host resolves the pin, mounts the engine bundle from
+    // the CDN, and verifies it against quine_version(). The engine is content-
+    // agnostic — it renders the scene below, it ships no game content.
+    "com.qubeworlds.quine": "^0.1"
+  },
+
+  // The 3D content this project owns (the engine is the framework; the scene +
+  // its behaviour are the app's data). main.q's `scene` node (scene_id 0) renders
+  // `game.scene`. The scene links its own skill (the game loop) and an HTML
+  // overlay (the on-screen controller) — the host feeds them to the engine.
+  // Geometry is all built-in (cone ship, sphere rocks/bullets), so no assets.
+  "game": {
+    "scene": "scene.json",
+    "assets": []
+  }
+}
