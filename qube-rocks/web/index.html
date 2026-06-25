@@ -49,9 +49,13 @@
       }
     } catch (e) { status("scene load failed: " + (e && e.message)); return; }
 
-    // ── 2. Pick a GPU backend (WebGPU if available, else WebGL2) ──────────────
-    var backend = "webgl2";
-    try { if (navigator.gpu && (await navigator.gpu.requestAdapter())) backend = "webgpu"; } catch (e) {}
+    // ── 2. Pick a GPU backend ─────────────────────────────────────────────────
+    // Default to WebGL2: it's universal (incl. the iPad Safari compatibility
+    // floor) and renders reliably. WebGPU is still experimental/spotty — merely
+    // having navigator.gpu does NOT mean a context will create (it can fail at
+    // device creation and leave the canvas blank while the page looks "booted").
+    // Opt into WebGPU explicitly with ?gpu=webgpu.
+    var backend = new URLSearchParams(location.search).get("gpu") === "webgpu" ? "webgpu" : "webgl2";
 
     // ── 3. The host seam the controls.js overlay drives ───────────────────────
     // It pushes input axes; the engine routes them to the skill's input(axis).
