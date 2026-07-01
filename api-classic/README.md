@@ -24,15 +24,15 @@ deploy script — just [`qube.json5`](./qube.json5) and [`src/index.js`](./src/i
 ## What it shows
 
 The worker never declares a single binding, id, or namespace. It just reads three
-names off `env`; the manifest's `env` block is what wires them up:
+names off `env`; the manifest's `imports` block is what wires them up:
 
 | `env` binding | Storage | Backed by | Manifest |
 |---|---|---|---|
-| `env.KV` | Key-value | this **project's Durable Object**, via the KV gateway | `env.kv` |
-| `env.DB` | SQLite | the **same project Durable Object's SQLite** (light-fast), via the SQL gateway | `env.db` |
-| `env.BUCKET` | Object store | this **project's R2 bucket** | `env.blob` |
+| `env.KV` | Key-value | this **project's Durable Object**, via the KV gateway | `imports.cache` |
+| `env.DB` | SQLite | the **same project Durable Object's SQLite** (light-fast), via the SQL gateway | `imports.database` |
+| `env.BUCKET` | Object store | this **project's R2 bucket** | `imports.storage` |
 
-qubepods reads the [`qube.json5`](./qube.json5) `env` block, opens each store pinned
+qubepods reads the [`qube.json5`](./qube.json5) `imports` block, opens each store pinned
 to this qube's identity, and injects it under a fixed reserved name — including the
 `env.KV`/`env.DB` gateways with the project scope in their props, so the standard
 `env.KV.get/put/list` and `env.DB.exec/query/first` surfaces work from plain JS
@@ -58,7 +58,7 @@ what the platform wired up.
 
 ## The SQLite tiers
 
-`env.db.tier` picks the storage class (pinned at project creation, immutable):
+`imports.database[].tier` picks the storage class (pinned at project creation, immutable):
 
 - **`light-fast`** *(this example)* — SQLite in the project Durable Object; the
   SAME durable that backs `env.KV`, reached via the SQL gateway. Zero-provision,

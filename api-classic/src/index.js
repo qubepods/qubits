@@ -3,7 +3,7 @@
 //
 // The point of this example: you write an ordinary `export default { fetch }`
 // module (no wasm on the server). You do NOT declare any Cloudflare bindings, ids,
-// or namespaces. The platform reads the `env` block in qube.json5 and injects
+// or namespaces. The platform reads the `imports` block in qube.json5 and injects
 // three reserved bindings into `env` at deploy time (docs: qubepods §"Storage
 // tiers, reserved bindings"):
 //
@@ -15,7 +15,7 @@
 //   env.BUCKET  — object storage  (a dedicated R2 bucket, this project's bucket)
 //
 // One of each, per project, under fixed names — so any app in the project that
-// declares the same env block binds the SAME stores. KV and the light-fast DB both
+// declares the same imports binds the SAME stores. KV and the light-fast DB both
 // live in ONE per-project durable, so the twin app (front-end wasm rendering a
 // QView, back-end wasm) reading `env.kv`/`env.db` shares these exact stats — same
 // project, same durable, same tables.
@@ -55,7 +55,7 @@ export default {
 function health(env) {
 	return {
 		ok: true,
-		note: 'these bindings were injected by qubepods from the qube.json5 env block — no wrangler.jsonc',
+		note: 'these bindings were injected by qubepods from the qube.json5 imports — no wrangler.jsonc',
 		bindings: {
 			KV: hasMethod(env.KV, 'get') && hasMethod(env.KV, 'put'),
 			DB: hasMethod(env.DB, 'exec') && hasMethod(env.DB, 'query'),
