@@ -26,7 +26,7 @@ pub fn serve(method: str, path: str, body: str) -> str {
     // (wasi:keyvalue/atomics.increment), so concurrent hits never lose one.
     if method == "POST" && path == "/visit" {
         match env.kv.increment("visits", 1) {
-            Ok(_)  -> "visited"
+            Ok(n)  -> "visits: {n}"
             Err(_) -> "kv-error"
         }
     // env.db — a tiny append-and-read log. `setup` creates the table; the
@@ -45,6 +45,12 @@ pub fn serve(method: str, path: str, body: str) -> str {
         match env.db.query_text("SELECT body FROM notes ORDER BY id DESC LIMIT 1") {
             Ok(Some(s)) -> "note: {s}"
             Ok(None)    -> "no notes"
+            Err(_)      -> "db-error"
+        }
+    } else if method == "GET" && path == "/count" {
+        match env.db.query_value("SELECT COUNT(*) FROM notes") {
+            Ok(Some(c)) -> "notes: {c}"
+            Ok(None)    -> "notes: 0"
             Err(_)      -> "db-error"
         }
     // env.blob — stash an opaque object under this project's bucket; never named.
