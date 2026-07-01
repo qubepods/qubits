@@ -1,6 +1,6 @@
 ![qubepods examples — pull a Qube, deploy it, share one URL](./assets/banner.svg)
 
-# qubepods-examples
+# qubits
 
 Example [Qubes](https://qubepods.com) you can read, pull, and deploy.
 
@@ -12,6 +12,7 @@ can build with `qube` and deploy to a qubepods project.
 
 | Example | What it shows |
 |---------|---------------|
+| [**api-classic**](./api-classic/) | The **API backend** starter. A **standard Cloudflare Worker** (plain `export default { fetch }`, no q64) that qubepods runs on **Workers for Platforms** with **KV + SQLite + R2 auto-bound from the manifest — no `wrangler.jsonc`**. You declare storage as logical `imports`; the platform injects `env.KV` (project Durable Object), `env.DB` (dedicated D1), and `env.BUCKET` (project R2 bucket). Serves its own test page from the API that round-trips each binding. |
 | [**twin-counter**](./twin-counter/) | The backend starter. A button and a shared count, built as a **twin** — a frontend wasm that renders, and a backend wasm you write that holds the count in a WASI key-value store (`env.kv`) and serves it over wRPC. |
 | [**scene-overlay**](./scene-overlay/) | A QView form floating over a **3D scene** (`scene` viewport, kind 21): a turning cube drawn by the quine engine behind a frosted card with a live counter. No backend — local `state` and an `on_5` press handler. Also **links a second qube** (`color/`) for the swatch colour. The base for QView-widgets-over-3D. |
 | [**qube-rocks**](./qube-rocks/) | **Asteroids-lite** — a **static-asset qube** (like blackbird) whose page loads the shared **quine** 3D engine from the CDN and runs the whole game client-side. Single player, no backend, no server. The game loop is a deterministic skill (`onPreStep` at **64 Hz**): steer with `transform.rotation`, fire + split rocks with `world.spawn`/`despawn`, driven by the **reusable on-screen controller** overlay (`controls.js`) the `water`/`sundial`/`terrain` examples share. Shows the engine's fixed-timestep + render interpolation, runtime spawn/despawn, and the `cone` ship mesh. |

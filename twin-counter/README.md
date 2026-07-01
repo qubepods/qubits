@@ -129,8 +129,8 @@ as an installable PWA, and you're already signed in.
 2. In Qubonaut's terminal, clone this example into your workspace:
 
    ```sh
-   git clone https://github.com/qubepods/qubepods-examples.git
-   cd qubepods-examples/twin-counter
+   git clone https://github.com/qubepods/qubits.git
+   cd qubits/twin-counter
    ```
 
 3. Run it:
@@ -148,8 +148,8 @@ the frontend renders the screen in the **Preview** pane and connects to it.
 Same thing from a laptop — `qube run` is all you need:
 
 ```sh
-git clone https://github.com/qubepods/qubepods-examples.git
-cd qubepods-examples/twin-counter
+git clone https://github.com/qubepods/qubits.git
+cd qubits/twin-counter
 qube run
 ```
 

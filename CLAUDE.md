@@ -1,4 +1,4 @@
-# CLAUDE.md — qubepods-examples
+# CLAUDE.md — qubits
 
 Example [Qubes](https://qubepods.com) you can read, pull, and deploy. Each
 top-level folder is a self-contained [q64](https://q64.dev) qube with its own
