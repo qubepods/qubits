@@ -54,6 +54,13 @@
   imports: {
     cache: [{ name: "stats-kv", interface: "wasi:keyvalue/store" }],
     database: [{ name: "stats-db", interface: "qubepods:sql/database", tier: "light-fast" }],
-    storage: [{ name: "assets", interface: "wasi:blobstore/blobstore" }],
+
+    // Object storage → env.BUCKET. A dedicated R2 bucket is PROVISIONED per project
+    // (unlike KV + light-fast SQL, which ride the shared gateway off the project
+    // Durable Object with nothing to create). So this import needs the environment's
+    // provisioning token (CF_PROVISION_TOKEN) configured. Re-enable it once the
+    // environment has provisioning; until then the worker reports env.BUCKET as
+    // "skipped" (it degrades gracefully — see r2Test / readStats):
+    // storage: [{ name: "assets", interface: "wasi:blobstore/blobstore" }],
   },
 }
