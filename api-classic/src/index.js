@@ -9,13 +9,16 @@
 //
 //   env.KV      — key-value       (service binding to the platform KV gateway,
 //                                   backed by this project's Durable Object)
-//   env.DB      — SQLite database (a dedicated Cloudflare D1, tier: "replicated")
+//   env.DB      — SQLite database (light-fast tier: the SAME project Durable
+//                                   Object's SQLite, via the SQL gateway —
+//                                   `env.DB.exec/query/first`)
 //   env.BUCKET  — object storage  (a dedicated R2 bucket, this project's bucket)
 //
 // One of each, per project, under fixed names — so any app in the project that
-// declares the same imports binds the SAME stores. That is what lets a later
-// "API-Twin" app (front-end wasm rendering a QView, back-end wasm) share these
-// exact stats: same project, same KV/DB/R2.
+// declares the same imports binds the SAME stores. KV and the light-fast DB both
+// live in ONE per-project durable, so a later "API-Twin" app (front-end wasm
+// rendering a QView, back-end wasm) reading `env.kv`/`env.db` shares these exact
+// stats — same project, same durable, same tables.
 //
 // The test page is served by THIS worker (from the API, not as a static asset):
 // GET / returns an HTML dashboard that calls the JSON endpoints below and shows,
@@ -55,7 +58,7 @@ function health(env) {
 		note: 'these bindings were injected by qubepods from qube.json5 imports — no wrangler.jsonc',
 		bindings: {
 			KV: hasMethod(env.KV, 'get') && hasMethod(env.KV, 'put'),
-			DB: hasMethod(env.DB, 'prepare'),
+			DB: hasMethod(env.DB, 'exec') && hasMethod(env.DB, 'query'),
 			BUCKET: hasMethod(env.BUCKET, 'put') && hasMethod(env.BUCKET, 'get')
 		}
 	};
@@ -104,17 +107,18 @@ async function kvTest(env) {
 	}
 }
 
-// SQLite (D1): create the shared events table, insert a row, count the rows.
+// SQLite (light-fast, project DO): create the shared events table, insert a row,
+// count the rows — via the SQL gateway's flat exec/first surface.
 async function dbTest(env) {
-	if (!hasMethod(env.DB, 'prepare')) return skip('DB', 'env.DB not injected');
+	if (!hasMethod(env.DB, 'exec')) return skip('DB', 'env.DB not injected');
 	try {
-		await env.DB.prepare(
+		await env.DB.exec(
 			`CREATE TABLE IF NOT EXISTS ${DB_TABLE} (id INTEGER PRIMARY KEY AUTOINCREMENT, kind TEXT, at INTEGER)`
-		).run();
-		await env.DB.prepare(`INSERT INTO ${DB_TABLE} (kind, at) VALUES (?, ?)`).bind('run', Date.now()).run();
-		const row = await env.DB.prepare(`SELECT count(*) AS n FROM ${DB_TABLE}`).first();
+		);
+		await env.DB.exec(`INSERT INTO ${DB_TABLE} (kind, at) VALUES (?, ?)`, 'run', Date.now());
+		const row = await env.DB.first(`SELECT count(*) AS n FROM ${DB_TABLE}`);
 		const n = row ? row.n : 0;
-		return result('DB', n > 0, `SQLite (D1, tier=replicated): ${n} row(s) in ${DB_TABLE}`);
+		return result('DB', n > 0, `SQLite (light-fast, project DO): ${n} row(s) in ${DB_TABLE}`);
 	} catch (e) {
 		return fail('DB', e);
 	}
@@ -143,8 +147,8 @@ async function readStats(env) {
 		if (hasMethod(env.KV, 'get')) stats.visits = parseInt((await env.KV.get(KV_VISITS)) || '0', 10) || 0;
 	} catch { /* binding absent or store empty */ }
 	try {
-		if (hasMethod(env.DB, 'prepare')) {
-			const row = await env.DB.prepare(`SELECT count(*) AS n FROM ${DB_TABLE}`).first();
+		if (hasMethod(env.DB, 'first')) {
+			const row = await env.DB.first(`SELECT count(*) AS n FROM ${DB_TABLE}`);
 			stats.events = row ? row.n : 0;
 		}
 	} catch { /* table not created yet */ }

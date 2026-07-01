@@ -50,11 +50,13 @@
 		// the standard env.KV.get/put/list surface works from a plain JS worker.
 		"cache": [{ "name": "stats-kv", "interface": "wasi:keyvalue/store" }],
 
-		// SQLite → env.DB. tier "replicated" = a dedicated Cloudflare D1 (read
-		// replicas + time travel), natively bindable by a JS worker. The other
-		// tiers: "light-fast" (project-DO SQLite, q64-only) and "external" (BYO
-		// Postgres/MySQL via Hyperdrive). Pinned at project creation, immutable.
-		"database": [{ "name": "stats-db", "interface": "qubepods:sql/database", "tier": "replicated" }],
+		// SQLite → env.DB. tier "light-fast" = this project's Durable Object SQLite
+		// (the SAME durable as env.KV), reached via the platform SQL gateway — so a
+		// classic JS worker and a q64 component in the same project share ONE
+		// database. Flat surface: env.DB.exec / query / first. The other tiers:
+		// "replicated" (a dedicated Cloudflare D1) and "external" (BYO Postgres/MySQL
+		// via Hyperdrive). Pinned at project creation, immutable.
+		"database": [{ "name": "stats-db", "interface": "qubepods:sql/database", "tier": "light-fast" }],
 
 		// Object storage → env.BUCKET. A dedicated R2 bucket, this project's bucket.
 		"storage": [{ "name": "assets", "interface": "wasi:blobstore/blobstore" }]
