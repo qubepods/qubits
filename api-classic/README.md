@@ -14,7 +14,7 @@ other shape: a wasm client + a wasm backend.)
 From the qubepods shell (the Qubonaut terminal), in this directory:
 
 ```
-qube run       # serve it locally with the three stores bound
+qube run       # run locally against mock KV/DB/R2 and preview the page
 qube deploy    # ship it to qubepods → https://<name>.qubepod.app
 ```
 

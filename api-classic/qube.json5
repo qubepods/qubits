@@ -10,16 +10,23 @@
   // Your qubepods project slug (a deploy token is pinned to its project).
   project: "api-classic",
 
-  // A CLASSIC worker qube: `component.module` names a hand-written JS handler
-  // (`export default { fetch }`) that runs as-is — no q64 compile, no wasm on the
-  // server. (A q64 qube would instead set `entry` + `component.emit`; the twin
-  // example does that.) `qube deploy` packs this module; `qube run` serves it.
+  // An application (a deployable Qube — it gets a URL). `type` is the qube KIND
+  // (library | application | workspace); it does NOT say "q64" — the COMPONENT
+  // shape does that (below).
+  type: "application",
+
+  // A CLASSIC worker qube: `component.language: "javascript"` + `component.module`
+  // name a hand-written handler (`export default { fetch }`) that runs as-is — no
+  // q64 compile, no wasm on the server. (A q64 qube instead sets `entry` +
+  // `component.emit` + `worlds`; the twin example does that.) This is how you
+  // "call a TS/JS worker": the component's language + module, not a separate type.
   //
   // Two commands, same in the qubepods web shell and a terminal — no qubepod.jsonc,
   // no wrangler, no deploy script:
-  //   qube run       serve it locally with the three stores bound.
+  //   qube run       run it locally (mock stores) and preview the page.
   //   qube deploy    ship it to qubepods; it gets a per-qube HTTPS endpoint.
   component: {
+    language: "javascript",
     module: "src/index.js",
   },
 
