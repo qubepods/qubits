@@ -23,7 +23,7 @@
   //
   // Two commands, same in the qubepods web shell and a terminal — no qubepod.jsonc,
   // no wrangler, no deploy script:
-  //   qube run       run it locally (mock stores) and preview the page.
+  //   qube run       run it live against the project's real stores and preview the page.
   //   qube deploy    ship it to qubepods; it gets a per-qube HTTPS endpoint.
   component: {
     language: "javascript",

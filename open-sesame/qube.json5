@@ -1,0 +1,45 @@
+{
+  $schema: "https://q64.dev/schema/qube.json5",
+  // Qube names are snake_case dotted segments — no dashes (the folder may use a
+  // dash, the name may not).
+  name: "qubepods.examples.open_sesame",
+  version: "0.1.0",
+  license: "MIT OR Apache-2.0",
+  description: "Variables & secrets, end to end: a tiny door-keeper API that greets with the project variable GREETING and opens only for the project secret SESAME_PASSWORD. Neither value appears in this repo — the manifest only DECLARES them; the platform injects them at deploy.",
+
+  // Your qubepods project slug (a deploy token is pinned to its project).
+  project: "open-sesame",
+
+  // A classic worker qube: a hand-written JS handler, no wasm on the server.
+  type: "application",
+  component: {
+    language: "javascript",
+    module: "worker.js",
+  },
+  runtime: "stateless",
+
+  exports: {
+    http: { interface: "qubepods:http/handler", route: "/" },
+  },
+
+  // The whole point of this example. The manifest DECLARES the project values
+  // this qube needs — it never contains them (this repo is public; values live
+  // in the console under Project → Variables & Secrets):
+  //
+  //   variables -> plain configuration, echoed back by the console. env.GREETING.
+  //   secrets   -> write-only, envelope-encrypted at rest.        env.SESAME_PASSWORD.
+  //
+  // Declaring them buys two guarantees:
+  //   1. Deploy-time validation — `qube deploy` FAILS with a message naming any
+  //      declared-but-unset value ("set it in the console, then redeploy"), so a
+  //      misconfigured qube never goes live half-blind.
+  //   2. Least surprise — ONLY declared names are injected. A project value this
+  //      manifest doesn't name is invisible to this qube.
+  //
+  // `binding` (optional, not used here) renames a value inside the qube:
+  //   secrets: [{ name: "API_KEY", binding: "UPSTREAM_KEY" }]  ->  env.UPSTREAM_KEY
+  imports: {
+    variables: [{ name: "GREETING" }],
+    secrets: [{ name: "SESAME_PASSWORD" }],
+  },
+}
