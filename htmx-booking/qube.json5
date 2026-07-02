@@ -1,0 +1,40 @@
+{
+  $schema: "https://q64.dev/schema/qube.json5",
+  // Qube names are snake_case dotted segments — no dashes (the folder may use a
+  // dash, the name may not).
+  name: "qubepods.examples.htmx_booking",
+  version: "0.1.0",
+  license: "MIT OR Apache-2.0",
+  description: "A hypermedia (htmx) slot-booking app — the server renders HTML fragments, the browser swaps them in. Native <input type=\"date\"> as the date picker, no build step, no frontend framework; bookings live in the project's SQLite database via env.DB.",
+
+  // Your qubepods project slug (a deploy token is pinned to its project).
+  project: "htmx-booking",
+
+  // An application (a deployable Qube — it gets a URL).
+  type: "application",
+
+  // A CLASSIC worker qube, like api-classic: a hand-written `export default
+  // { fetch }` module that runs as-is — no q64 compile, no wasm on the server.
+  // The difference is what it RETURNS: not JSON for a client-side script, but
+  // ready-to-swap HTML fragments. The browser page carries no app code of its
+  // own — just htmx (one <script>, ~14 kB gz) reading hx-* attributes.
+  component: {
+    language: "javascript",
+    module: "src/index.js",
+  },
+
+  // Stateless: request-scoped, the persistence is the bound store.
+  runtime: "stateless",
+
+  // The worker serves the page AND every fragment from `/`.
+  exports: {
+    http: { interface: "qubepods:http/handler", route: "/" },
+  },
+
+  // One store: the light-fast SQLite database (the project Durable Object's
+  // SQLite, injected as env.DB). No namespace or database id anywhere — the
+  // platform opens the store and pins it to this qube's identity.
+  imports: {
+    database: [{ name: "bookings-db", interface: "qubepods:sql/database", tier: "light-fast" }],
+  },
+}
