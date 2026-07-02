@@ -41,5 +41,9 @@ world adder {
 ```js
 const { instance } = await WebAssembly.instantiate(
   fs.readFileSync("target/debug/wasm64/qubepods.examples.adder.wasm"), {});
-instance.exports.add(2n, 3n); // 5n  (i64 ⇄ BigInt)
+
+// The `n` suffix is a JS BigInt literal, NOT a unit: wasm i64 maps to
+// BigInt at the JS boundary (a plain Number only holds integers exactly
+// up to 2^53 - 1). These are just the integers 2 and 3.
+instance.exports.add(2n, 3n); // 5n
 ```
