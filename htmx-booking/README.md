@@ -66,6 +66,10 @@ those attributes, not components you import.
    of poll is the twin's job: the same fragments fanned over its WebSocket —
    see `twin-counter`.)
 
+Plus a small fifth: the **reset all bookings** button carries `hx-confirm`,
+so htmx guards the destructive POST behind a confirm dialog — one attribute,
+no JS.
+
 ## The edge knows who you are (qubepods-specific)
 
 The clock — and the default guest name — come from the request's edge

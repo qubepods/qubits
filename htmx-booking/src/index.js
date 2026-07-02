@@ -36,6 +36,7 @@ export default {
 				return html(await slotsFragment(env, url.searchParams.get('date')));
 			if (request.method === 'GET' && url.pathname === '/bookings') return html(await bookingsFragment(env));
 			if (request.method === 'POST' && url.pathname === '/book') return book(env, request);
+			if (request.method === 'POST' && url.pathname === '/reset') return reset(env, request);
 			if (request.method === 'DELETE' && url.pathname.startsWith('/bookings/'))
 				return unbook(env, url.pathname.slice('/bookings/'.length));
 			return html('<p>not found</p>', 404);
@@ -72,6 +73,18 @@ async function book(env, request) {
 	// two regions, no client code. The HX-Trigger header fires a DOM event the
 	// bookings list subscribes to (hx-trigger="bookings-changed from:body").
 	const body = notice + (await slotsFragment(env, day)) + (await countOob(env));
+	return html(body, 200, { 'HX-Trigger': 'bookings-changed' });
+}
+
+// POST /reset — clear every booking. The button carries hx-confirm, so htmx
+// guards it with a confirm dialog before the request ever leaves the page —
+// no JS written for that either. Response = fresh slots for the shown date
+// (hx-include="#date" rides the POST body) + OOB badge + list refresh event.
+async function reset(env, request) {
+	const form = await request.formData();
+	await env.DB.exec('DELETE FROM bookings');
+	const day = validDate(form.get('date')) || new Date().toISOString().slice(0, 10);
+	const body = (await slotsFragment(env, day)) + (await countOob(env));
 	return html(body, 200, { 'HX-Trigger': 'bookings-changed' });
 }
 
@@ -219,6 +232,8 @@ async function page(env, request) {
   li { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #1e232b; padding: 9px 2px; }
   li.empty { color: #5c6672; border: 0; }
   .x { background: none; border: 0; color: #f87171; cursor: pointer; font-size: 14px; }
+  .reset { background: none; border: 1px solid #3a1417; color: #f87171; border-radius: 9px; padding: 7px 14px; font: inherit; font-size: 13px; cursor: pointer; }
+  .reset:hover { background: #3a1417; }
   .clock .time { font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; }
   .clock .time small { font-size: 13px; color: #9aa4b2; font-weight: 400; }
   .clock .edge { color: #9aa4b2; font-size: 13px; margin-top: 2px; }
@@ -255,6 +270,11 @@ async function page(env, request) {
 
   <h2>Bookings</h2>
   <ul id="bookings" class="card" hx-get="/bookings" hx-trigger="load, every 3s, bookings-changed from:body"></ul>
+
+  <!-- [htmx] hx-confirm guards the request with a confirm dialog — the POST
+       only fires if the user accepts. Destructive action, one attribute. -->
+  <p><button class="reset" hx-post="/reset" hx-include="#date" hx-target="#slots"
+    hx-confirm="Clear ALL bookings?">reset all bookings</button></p>
 </main>
 </body>
 </html>`;
