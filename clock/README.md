@@ -38,5 +38,10 @@ qube build --component --addr wasm32
   monotonic clock under wasmtime. The qube only ever sees the instant it
   asked for.
 
-See [`stopwatch`](../stopwatch/) for this qube linked together with `adder`
-into a runnable Qube.
+## Using the library
+
+To see an example of how to use this library, look at the [`now`](../now/)
+project — an application whose `main` imports `now_ns` and prints the reading,
+the smallest "link a library and run it" example. See
+[`stopwatch`](../stopwatch/) for this qube linked together with `adder` into a
+fuller runnable Qube.
