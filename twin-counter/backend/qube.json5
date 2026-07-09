@@ -7,9 +7,6 @@
   type: "library",
   entry: "src/lib.q",
 
-  // Serve the channel entry point (`join`) over wRPC so each frontend can
-  // connect, send taps, and receive the live count. Streaming RPC requires the
-  // component model — hence emit.
   component: {
     emit: true,
     world: "counter-backend",
@@ -18,9 +15,6 @@
     export: true,
   },
 
-  // What the backend asks for: a key-value store (env.kv → wasi:keyvalue), which
-  // qubepods binds to the project's store at boot, plus @wire for the channel it
-  // serves. `qube audit` shows exactly this — no network, no filesystem.
   effects: {
     declared: ["@kv", "@wire"],
   },

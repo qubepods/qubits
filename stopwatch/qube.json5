@@ -7,20 +7,11 @@
   type: "application",
   entry: "src/main.q",
 
-  // The whole point of this example: a Qube is assembled from qubes. Keys
-  // are full qube names (= the module paths `import` uses in main.q); the
-  // values here are local path deps — sibling folders in this repo — where
-  // a published qube would carry a version range resolved via the Continuum.
   dependencies: {
     "qubepods.examples.adder": { path: "../adder" },
     "qubepods.examples.clock": { path: "../clock" },
   },
 
-  // Emit the component. main() prints (env.out) AND times (env.time via the
-  // linked clock qube), so the build takes the preview1 path: the core's
-  // fd_write/clock_time_get syscalls are lifted by the WASI adapter into a
-  // wasi:cli/run command component importing wasi:cli/stdout +
-  // wasi:clocks/monotonic-clock.
   component: {
     emit: true,
     world: "stopwatch",

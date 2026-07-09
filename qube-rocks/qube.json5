@@ -1,15 +1,9 @@
 {
   $schema: "https://q64.dev/schema/qube.json5",
-  // Qube names are snake_case dotted segments — no dashes (the folder may use a
-  // dash, the name may not).
   name: "qubepods.examples.qube_rocks",
   version: "0.1.0",
   license: "MIT OR Apache-2.0",
   description: "Qube Rocks — an Asteroids-lite browser game. A static-asset qube: the page loads the shared quine 3D engine from the CDN and runs the whole game client-side. No backend, no server.",
 
-  // Static-site qube (like blackbird): `qube deploy` serves the `web/` tree as-is
-  // — no q64 compile, no component, no backend. `web/index.html` is the host: it
-  // loads the quine engine from the CDN and feeds it `web/scene.json` + the skill,
-  // then mounts the controls overlay. `notFound` serves index.html for unmatched routes.
   static: { dir: "web", notFound: "single-page-application" },
 }

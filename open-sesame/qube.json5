@@ -15,8 +15,6 @@
     http: { interface: "qubepods:http/handler", route: "/" },
   },
 
-  // Declared, not contained: qube deploy fails if any is unset, and only these
-  // names reach the qube (as env.GREETING / env.SESAME_PASSWORD).
   imports: {
     variables: [{ name: "GREETING" }],
     secrets: [{ name: "SESAME_PASSWORD" }],

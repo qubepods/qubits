@@ -1,64 +1,28 @@
 {
   $schema: "https://q64.dev/schema/qube.json5",
-  // Qube names are snake_case dotted segments — no dashes (the folder may use a
-  // dash, the name may not).
   name: "qubepods.examples.api_classic",
   version: "0.1.0",
   license: "MIT OR Apache-2.0",
   description: "A classic HTTP API worker — a plain JS request handler (no wasm on the server) that stores records in the key-value store, queries the light-fast SQLite database, and stashes blobs in object storage. Bindings come from this manifest; it never names a namespace, database, or bucket.",
 
-  // Your qubepods project slug (a deploy token is pinned to its project).
   project: "api-classic",
 
-  // An application (a deployable Qube — it gets a URL). `type` is the qube KIND
-  // (library | application | workspace); it does NOT say "q64" — the COMPONENT
-  // shape does that (below).
   type: "application",
 
-  // A CLASSIC worker qube: `component.language: "javascript"` + `component.module`
-  // name a hand-written handler (`export default { fetch }`) that runs as-is — no
-  // q64 compile, no wasm on the server. (A q64 qube instead sets `entry` +
-  // `component.emit` + `worlds`; the twin example does that.) This is how you
-  // "call a TS/JS worker": the component's language + module, not a separate type.
-  //
-  // Two commands, same in the qubepods web shell and a terminal — no qubepod.jsonc,
-  // no wrangler, no deploy script:
-  //   qube run       run it live against the project's real stores and preview the page.
-  //   qube deploy    ship it to qubepods; it gets a per-qube HTTPS endpoint.
   component: {
     language: "javascript",
     module: "src/index.js",
   },
 
-  // Stateless: request-scoped, the persistence is the bound stores.
   runtime: "stateless",
 
-  // The worker serves its own test page + JSON endpoints from `/`.
   exports: {
     http: { interface: "qubepods:http/handler", route: "/" },
   },
 
-  // The stores this API reaches — the ONLY place bindings come from. qubepods opens
-  // each store and pins it to this qube's identity (org/project/app), then injects
-  // it under a fixed reserved name (never a namespace/database/bucket id):
-  //
-  //   cache   -> env.KV      key-value — this project's Durable Object (KV gateway)
-  //   database-> env.DB      SQLite    — the SAME project DO's SQLite (SQL gateway)
-  //   storage -> env.BUCKET  object store — this project's R2 bucket
-  //
-  // One store of each PER PROJECT, under reserved names — so the twin app in the
-  // same project binds the SAME stores and shares this exact data. `tier:
-  // "light-fast"` is the project Durable Object's SQLite (same durable as env.KV);
-  // the other tiers are "replicated" (a dedicated D1) and "external" (BYO via
-  // Hyperdrive). Pinned at project creation, immutable.
   imports: {
     cache: [{ name: "stats-kv", interface: "wasi:keyvalue/store" }],
     database: [{ name: "stats-db", interface: "qubepods:sql/database", tier: "light-fast" }],
-
-    // Object storage → env.BUCKET. A dedicated R2 bucket is PROVISIONED per project
-    // (unlike KV + light-fast SQL, which ride the shared gateway off the project
-    // Durable Object with nothing to create) — created once for the project on
-    // deploy, using the environment's provisioning token.
     storage: [{ name: "assets", interface: "wasi:blobstore/blobstore" }],
   },
 }

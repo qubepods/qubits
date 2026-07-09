@@ -1,6 +1,5 @@
 {
   $schema: "https://q64.dev/schema/qube.json5",
-  // Qube names are snake_case dotted segments — no dashes.
   name: "qubepods.examples.clock",
   version: "0.1.0",
   license: "MIT OR Apache-2.0",
@@ -8,10 +7,6 @@
   type: "library",
   entry: "src/lib.q",
 
-  // Emit a WebAssembly component in addition to the core module. Unlike
-  // `adder` (a pure surface), this qube reaches a capability: `env.time`,
-  // which lowers to an import of wasi:clocks/monotonic-clock. The host
-  // supplies the clock; the qube only ever sees the instant it asked for.
   component: {
     emit: true,
   },

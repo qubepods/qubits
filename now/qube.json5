@@ -7,16 +7,10 @@
   type: "application",
   entry: "src/main.q",
 
-  // A Qube assembled from a qube: the `clock` library (env.time) is a local
-  // path dep (a published qube would carry a version range via the Continuum).
-  // The key is the full qube name — the module path `import` uses in main.q.
   dependencies: {
     "qubepods.examples.clock": { path: "../clock" },
   },
 
-  // main() prints (env.out) and reads env.time (via the linked clock qube), so
-  // the build takes the preview1 path: fd_write + clock_time_get, lifted by the
-  // WASI adapter into a wasi:cli/run command component.
   component: {
     emit: true,
     world: "now",
