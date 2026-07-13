@@ -10,10 +10,16 @@
   type: "application",
   entry: "src/main.q",
 
+  // Core module only: the device host executes q64 CORE wasm against the
+  // host ABI (q64/spec/host-abi.md) — this loop needs exactly env.out,
+  // env.kv_increment (the v0 sensor read) and env.sleep_ns. Component
+  // packaging of that face mix doesn't lift yet (wasm-tools adapter can't
+  // map raw env.* — a q64 gap, tracked); the core module is the artifact
+  // placement delivers, same contract the web shell already implements.
+  build: "qube build --addr wasm32",
   component: {
-    emit: true,
-    world: "thermo-device",
-    worlds: ["wasi:cli/command"],
+    language: "q64",
+    wasm: "target/debug/wasm32/qubepods.examples.thermo_device.wasm",
   },
 
   // The deployment target: every project node carrying ALL of these tags
