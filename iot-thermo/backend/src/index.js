@@ -260,9 +260,15 @@ const PAGE = `<!doctype html>
 
   const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
+  // Resolve API paths RELATIVE to wherever this page is served — so the
+  // dashboard works both at a domain root (prod, via the router) and under a
+  // path prefix (the stage gate, e.g. /q/<acct>/<proj>/<app>/<env>/). An
+  // absolute "/api/fleet" would escape the prefix and miss on stage.
+  const api = (p) => new URL(p, document.baseURI).href;
+
   async function refresh() {
     try {
-      const res = await fetch('/api/fleet').then(r => r.json());
+      const res = await fetch(api('api/fleet')).then(r => r.json());
       const now = res.at ?? Date.now();
       const devs = res.devices ?? [];
       document.getElementById('note').style.display = res.persistent === false ? 'block' : 'none';
