@@ -1,0 +1,26 @@
+{
+  $schema: "https://q64.dev/schema/qube.json5",
+  name: "qubepods.examples.thermo",
+  version: "0.1.0",
+  license: "MIT OR Apache-2.0",
+  description: "A live fleet thermometer — the IoT starter. Raspberry Pis run a small device agent that streams SoC temperature; this Qube collects the readings in the key-value store and serves a live gauge dashboard. The same agent speaks the qubepods node plane (enroll + telemetry trunk), so the fleet also shows up as devices on the console Nodes page.",
+
+  project: "iot",
+
+  type: "application",
+
+  component: {
+    language: "javascript",
+    module: "src/index.js",
+  },
+
+  runtime: "stateless",
+
+  exports: {
+    http: { interface: "qubepods:http/handler", route: "/" },
+  },
+
+  imports: {
+    cache: [{ name: "fleet-kv", interface: "wasi:keyvalue/store" }],
+  },
+}

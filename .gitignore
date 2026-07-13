@@ -1,2 +1,5 @@
 # qube build output
 target/
+
+# python bytecode
+__pycache__/
