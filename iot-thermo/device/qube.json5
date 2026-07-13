@@ -15,4 +15,11 @@
     world: "thermo-device",
     worlds: ["wasi:cli/command"],
   },
+
+  // The deployment target: every project node carrying ALL of these tags
+  // runs this qube (a standing rule — nodes that enroll or gain the tag
+  // later get it too; tags select, the node's capability bound gates).
+  placement: {
+    nodes: { tags: ["thermo"] },
+  },
 }
