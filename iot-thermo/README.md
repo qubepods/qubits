@@ -32,18 +32,41 @@ Two independent planes, one agent, one thermometer reading:
   established, the agent falls back to the 5-minute heartbeat poll — the same
   backup path the platform defines. The device never opens an inbound port.
 
+## Shape — one project, three members
+
+This example is a **workspace**: one qubepods project, three members, one per
+host. The destination is three wasm builds of one language — the same q64
+actor model in the browser, on the platform, and on your own hardware:
+
+| Member | Runs | Today | Destination |
+|---|---|---|---|
+| [`device/`](./device/) | your hardware (Pi) | Python agent script | q64 → **wasm32** on the device host; publishes measurements, **handles commands** |
+| [`backend/`](./backend/) | the platform | JS worker (deployable now) | q64 twin: aggregates, fans out to frontends, routes commands down |
+| [`frontend/`](./frontend/) | the browser | HTML served by the backend | q64 → **wasm32** remote controller, pushed to over one WebSocket |
+
+The frontend↔backend leg is the [twin-counter](../twin-counter/) pattern,
+already running in production. The device leg is what this example adds:
+telemetry up, commands down, zero inbound ports. Picture the end state as a
+robot walking around, driven from a browser — thermo proves the identical
+loop with a thermometer (measurements up; "sample faster" / "blink your LED"
+down).
+
 ## Files
 
-- [`qube.json5`](./qube.json5) — the manifest; one KV import, nothing else.
-- [`src/index.js`](./src/index.js) — the worker: `POST /api/report`,
-  `GET /api/fleet`, and the dashboard page.
+- [`qube.json5`](./qube.json5) — the workspace root binding the members.
+- [`backend/qube.json5`](./backend/qube.json5) — the deployable manifest; one
+  KV import, nothing else.
+- [`backend/src/index.js`](./backend/src/index.js) — the worker:
+  `POST /api/report`, `GET /api/fleet`, and the dashboard page.
 - [`device/thermo_agent.py`](./device/thermo_agent.py) — the device agent.
   Stdlib-only for the app plane; `pip install websocket-client` enables the
   node-plane trunk.
+- [`frontend/`](./frontend/) — reserved for the browser twin (today the
+  dashboard is inline in the backend).
 
 ## Run it
 
-**1. Deploy the Qube** — from this folder, in the web shell
+**1. Deploy the Qube** — from `backend/`, in the web shell
 ([app.qubepods.com](https://app.qubepods.com)) or a terminal after
 `qube pod login`:
 
