@@ -8,9 +8,10 @@
   type: "workspace",
 
   workspace: {
-    // Today only the backend is a deployable qube. `device` and `frontend`
-    // join this list as they become q64 qubes (see the README's
+    // `backend` is the deployable JS worker; `device` and `frontend` are q64
+    // placeholder qubes that compile to valid wasm32 components today and
+    // grow into the sensor actor / browser twin (see the README's
     // "Where this example is headed").
-    members: ["backend"],
+    members: ["device", "backend", "frontend"],
   },
 }

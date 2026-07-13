@@ -58,11 +58,17 @@ down).
   KV import, nothing else.
 - [`backend/src/index.js`](./backend/src/index.js) — the worker:
   `POST /api/report`, `GET /api/fleet`, and the dashboard page.
-- [`device/thermo_agent.py`](./device/thermo_agent.py) — the device agent.
-  Stdlib-only for the app plane; `pip install websocket-client` enables the
-  node-plane trunk.
-- [`frontend/`](./frontend/) — reserved for the browser twin (today the
-  dashboard is inline in the backend).
+- [`device/thermo_agent.py`](./device/thermo_agent.py) — the device agent
+  the fleet runs today (**requires `python3`** — preinstalled on Raspberry Pi
+  OS). Stdlib-only for the app plane; `pip install websocket-client` enables
+  the node-plane trunk. Hand-copying it to the device is scaffolding:
+  **enrollment is the last manual act** — placing workloads on an enrolled
+  node is the platform's job (see [`device/README.md`](./device/README.md)).
+- [`device/qube.json5`](./device/qube.json5) +
+  [`frontend/qube.json5`](./frontend/qube.json5) — the two q64 members:
+  placeholder mains that compile to valid wasm32 components today
+  (`qube build --addr wasm32`) and grow into the sensor actor and the
+  browser twin.
 
 ## Run it
 

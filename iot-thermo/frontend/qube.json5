@@ -1,0 +1,18 @@
+{
+  $schema: "https://q64.dev/schema/qube.json5",
+  name: "qubepods.examples.thermo_frontend",
+  version: "0.1.0",
+  license: "MIT OR Apache-2.0",
+  description: "The frontend member — the browser twin (remote controller). Placeholder main today; becomes the wasm32 qube holding one wRPC channel to the backend (the twin-counter pattern): readings pushed down, commands sent up. Until then the dashboard is served inline by the backend.",
+
+  project: "iot",
+
+  type: "application",
+  entry: "src/main.q",
+
+  component: {
+    emit: true,
+    world: "thermo-frontend",
+    worlds: ["wasi:cli/command"],
+  },
+}

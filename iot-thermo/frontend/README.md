@@ -1,7 +1,10 @@
 # frontend — the browser twin (remote controller)
 
 Today the dashboard is an HTML page served inline by the [backend](../backend/)
-worker, polling `/api/fleet`. This folder is its reserved seat.
+worker, polling `/api/fleet`. This folder holds the twin's seat: `qube.json5`
++ `src/main.q` are a placeholder that already compiles to a valid wasm32
+component (`qube build --addr wasm32`), so the member is real to the tooling
+while the twin is written.
 
 Where it's headed: a q64 qube compiled to **wasm32**, running in the browser,
 holding one wRPC channel over a WebSocket to the backend — exactly the
