@@ -280,7 +280,8 @@ const PAGE = `<!doctype html>
       document.getElementById('fleet').innerHTML = devs.length
         ? devs.map(d => card(d, now)).join('')
         : '<div class="empty">No devices yet.<br/><code>python3 device/thermo_agent.py --report-url ' +
-          location.origin + ' --simulate</code></div>';
+          location.href.replace(/[?#].*$/, '').replace(/\/$/, '') +
+          ' --device demo-1 --simulate</code></div>';
     } catch (e) { /* keep the last good render; the next poll retries */ }
   }
   refresh();
