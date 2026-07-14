@@ -97,7 +97,7 @@ const PAGE = `<!doctype html>
 <main>
   <h1>Thermo</h1>
   <p class="sub">Live fleet thermometer. History comes from the <b>project database</b> (written by each device's twin); updates are <b>pushed</b> over one WebSocket to the fleet twin.</p>
-  <p class="conn">twin: <b id="conn" class="bad">connecting…</b> · history: <b id="hist">–</b></p>
+  <p class="conn">twin: <b id="conn" class="bad">connecting…</b> · history: <b id="hist">–</b> · v0.2.3</p>
   <div class="summary">
     <div class="stat"><div class="n" id="s-devices">–</div><div class="l">devices</div></div>
     <div class="stat"><div class="n" id="s-live">–</div><div class="l">reporting</div></div>

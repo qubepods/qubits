@@ -18,7 +18,7 @@ cat > "$WORK/qubepod.jsonc" <<'MANIFEST'
   "kind": "QubePod",
   "name": "qubepods.examples.thermo_frontend",
   "project": "iot",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "runtime": "stateless",
   "component": { "module": "index.js" },
   "imports": { "database": [{ "name": "db", "interface": "qubepods:sql/query", "tier": "light-fast" }] }
@@ -30,3 +30,7 @@ curl -fsS -X POST "$API/api/deploy" \
   -H "Authorization: Bearer $QUBEPODS_TOKEN" \
   -F "environment=production" \
   -F "bundle=@$WORK/bundle.zip" -w '\nHTTP %{http_code}\n'
+
+# A repeat deploy parks in the IDLE release slot (served:false in the response)
+# so you can test the future release at its slotPreviewUrl first. Flip it live:
+echo "promote when tested:  curl -X POST \"$API/api/projects/iot/apps/qubepods.examples.thermo_frontend/promote\" -H \"Authorization: Bearer \$QUBEPODS_TOKEN\""
