@@ -18,7 +18,7 @@
 
   // `qube build --addr wasm32` emits the store-component CORE (`.kvcore`) —
   // the artifact the twin runtime instantiates (component-lift of raw env.*
-  // is a tracked q64 gap). Requires q64 ≥ 0.0.10; ./deploy.sh builds and
+  // is a tracked q64 gap). Requires q64 ≥ 0.0.11; ./deploy.sh builds and
   // ships it.
   build: "qube build --addr wasm32",
   component: {

@@ -37,6 +37,6 @@ which every reading also reaches for live push.
 $ QUBEPODS_TOKEN=qube_… ./deploy.sh
 ```
 
-Builds the `.kvcore` store-component core (requires q64 ≥ 0.0.10) and ships
+Builds the `.kvcore` store-component core (requires q64 ≥ 0.0.11) and ships
 it as a stateful deployment with the twin pairing in the manifest. Like every
 twin: **a deployment, not a route**.

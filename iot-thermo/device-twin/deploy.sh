@@ -15,7 +15,7 @@ API="${QUBEPODS_API:-https://api.qubepods.com}"
 # twin runtime runs the core) — gate on the artifact, not the exit code.
 qube build --addr wasm32 || true
 KVCORE=$(ls target/debug/wasm32/*.kvcore.wasm | head -1)
-[ -f "$KVCORE" ] || { echo "no .kvcore artifact — check the qube/q64 version (needs >= 0.0.10)" >&2; exit 1; }
+[ -f "$KVCORE" ] || { echo "no .kvcore artifact — check the qube/q64 version (needs >= 0.0.11)" >&2; exit 1; }
 
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT

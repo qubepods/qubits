@@ -19,7 +19,7 @@ API="${QUBEPODS_API:-https://api.qubepods.com}"
 #    channel qube (this fleet twin) emits only the raw core — the twin
 #    runtime runs either. The build exits non-zero on the final
 #    component-lift step (a tracked q64 gap), so gate on the artifact, not
-#    the exit code. q64 ≥ 0.0.10 required (0.0.9 emits a module that traps
+#    the exit code. q64 ≥ 0.0.11 required (0.0.9 emits a module that traps
 #    on its first state-Vec write).
 rm -rf target
 qube build --addr wasm32 || true
