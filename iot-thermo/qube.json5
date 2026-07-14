@@ -3,7 +3,7 @@
   name: "iot_thermo",
   version: "0.1.0",
   license: "MIT OR Apache-2.0",
-  description: "Workspace root for the IoT starter — one project, three members: a device qube on your hardware, a backend qube on the platform, a frontend qube in the browser.",
+  description: "Workspace root for the IoT starter — one project, four members: a device qube on your hardware, its per-device backend twin and the dashboard twin on the platform, and the frontend in the browser.",
 
   type: "workspace",
 
