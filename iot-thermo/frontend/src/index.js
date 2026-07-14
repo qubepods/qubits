@@ -74,8 +74,10 @@ const PAGE = `<!doctype html>
   .stat { background: #12151a; border: 1px solid #1e232b; border-radius: 12px; padding: 12px 18px; min-width: 110px; }
   .stat .n { font-size: 24px; font-weight: 700; }
   .stat .l { color: #9aa4b2; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
-  .fleet { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
-  .card { background: #12151a; border: 1px solid #1e232b; border-radius: 14px; padding: 16px 18px; }
+  .fleet { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; }
+  .card { background: #12151a; border: 1px solid #1e232b; border-radius: 14px; padding: 16px 20px; }
+  .meta { color: #9aa4b2; font-size: 12px; line-height: 1.7; font-variant-numeric: tabular-nums; }
+  .meta b { color: #b9c2cf; font-weight: 550; }
   .card.gone { opacity: .55; }
   .head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
   .name { font-weight: 650; }
@@ -106,7 +108,7 @@ const PAGE = `<!doctype html>
 <script>
   const STALE_MS = 20e3, OFF_MS = 120e3;
   const FLEET_APP = 'qubepods.examples.thermo';
-  // deviceId -> { tempC, at, readings: [[ms, C], …] }
+  // deviceId -> { tempC, at, readings: [[ms, C], …], meta: {name, os, arch, hostname, ip} }
   const fleet = new Map();
 
   function colorFor(t) {
@@ -139,16 +141,24 @@ const PAGE = `<!doctype html>
           const age = now - d.at;
           const state = age < STALE_MS ? ['live','live'] : age < OFF_MS ? ['stale','stale'] : ['off','offline'];
           const color = colorFor(d.tempC);
+          const m = d.meta ?? {};
+          const os = [m.os, m.arch].filter(Boolean).join('/');
           return '<div class="card' + (state[0] === 'off' ? ' gone' : '') + '">' +
-            '<div class="head"><span class="name">device ' + id + '</span>' +
+            '<div class="head"><span class="name">' + esc(m.name ?? 'device ' + id) + '</span>' +
             '<span class="pill ' + state[0] + '">' + state[1] + '</span></div>' +
             '<div class="temp" style="color:' + color + '">' + d.tempC.toFixed(1) + '<small> °C</small></div>' +
+            '<div class="meta">' +
+              (m.ip ? '<b>ip</b> ' + esc(m.ip) + ' · ' : '') +
+              (os ? '<b>os</b> ' + esc(os) + (m.hostname ? ' (' + esc(m.hostname) + ')' : '') + '<br/>' : '') +
+              '<b>last reading</b> ' + (d.at ? new Date(d.at).toLocaleTimeString() : '–') +
+            '</div>' +
             spark(d.readings, color) + '</div>';
         }).join('')
       : '<div class="empty">No devices yet — enroll one and it appears here the moment it reports.</div>';
   }
+  const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   function feed(id, tempC, at, isLive) {
-    const d = fleet.get(id) ?? { tempC: 0, at: 0, readings: [] };
+    const d = fleet.get(id) ?? { tempC: 0, at: 0, readings: [], meta: null };
     d.tempC = tempC; if (at > d.at) d.at = at;
     d.readings.push([at, tempC]); if (d.readings.length > 60) d.readings.shift();
     fleet.set(id, d);
@@ -186,6 +196,30 @@ const PAGE = `<!doctype html>
     ws.onerror = () => { try { ws.close(); } catch {} };
     setInterval(() => { try { ws.send('ping'); } catch {} }, 25e3);
   }
+
+  // The fleet ROSTER — device identity (name, ip, os) + last-reading time,
+  // served by the platform at /.well-known/fleet on the fleet twin's route.
+  // Same URL derivation as the socket, over https.
+  function rosterUrl() {
+    const u = new URL(twinUrl());
+    u.protocol = u.protocol === 'ws:' ? 'http:' : 'https:';
+    u.pathname = u.pathname.replace(/\\/?$/, '/') + '.well-known/fleet';
+    return u.href;
+  }
+  async function refreshRoster() {
+    try {
+      const r = await fetch(rosterUrl()).then(r => r.json());
+      for (const dev of r.devices ?? []) {
+        const d = fleet.get(dev.id) ?? { tempC: dev.value / 1000, at: 0, readings: [], meta: null };
+        d.meta = dev;
+        if (dev.at && dev.at > d.at) { d.at = dev.at; d.tempC = dev.value / 1000; }
+        fleet.set(dev.id, d);
+      }
+      render();
+    } catch { /* roster is enrichment — the gauges live without it */ }
+  }
+  refreshRoster();
+  setInterval(refreshRoster, 30e3);
 
   // Seed the sparklines from the project database, then go live.
   fetch(new URL('api/history', document.baseURI)).then(r => r.json()).then(h => {

@@ -18,7 +18,7 @@ cat > "$WORK/qubepod.jsonc" <<'MANIFEST'
   "kind": "QubePod",
   "name": "qubepods.examples.thermo_frontend",
   "project": "iot",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "runtime": "stateless",
   "component": { "module": "index.js" },
   "imports": { "database": [{ "name": "db", "interface": "qubepods:sql/query", "tier": "light-fast" }] }
