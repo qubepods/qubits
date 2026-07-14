@@ -138,6 +138,31 @@ isolates, and device keys are **not enforced** — an ephemeral ledger would
 re-mint on every recycle and 401 the key it issued a moment ago. Identity is
 policed exactly where it can be kept: on the durable store.
 
+## The q64 twin — readings land in the project database
+
+The destination backend ([`backend/src/twin.q`](./backend/src/twin.q)) now
+does more than fan out: **every reading persists via `env.db` into the
+project's real database** — the one the console's Database page shows. The
+twin owns its schema (`setup()` creates `thermo_readings(device, temp_mc,
+at)`; the platform calls it once per deployed artifact) and appends one row
+per report. The platform packs `(device_id << 32 | temp_mc)` into the i64 it
+hands the twin, so the row carries the true device id without identity ever
+riding the wire; `at` is stamped by SQLite itself (`unixepoch()` DEFAULT)
+when the statement replays — write-behind, milliseconds after the report.
+
+Open your project's **Database** page while the fleet reports and watch
+`thermo_readings` grow:
+
+```sql
+SELECT device, temp_mc / 1000.0 AS c, datetime(at, 'unixepoch') AS when_utc
+FROM thermo_readings ORDER BY at DESC LIMIT 20;
+```
+
+Reads from *inside* the qube (`env.db.query_*`) return a typed error until
+the platform's in-isolate read engine lands — the honest v0. Querying from
+the console (above) works today because it reads the same database the
+replay writes.
+
 ## Where this example is headed
 
 Thermo deliberately uses only what a customer can reach **today**: the deploy
