@@ -35,14 +35,21 @@ Two independent planes, one agent, one thermometer reading:
 ## Shape — one project, three members
 
 This example is a **workspace**: one qubepods project, three members, one per
-host. The destination is three wasm builds of one language — the same q64
-actor model in the browser, on the platform, and on your own hardware:
+host. Each member is a complete qube — its own manifest and source folder —
+and the difference between them is **where its instances run and how many
+there are**:
 
-| Member | Runs | Today | Destination |
-|---|---|---|---|
-| [`device/`](./device/) | your hardware (Pi) | Python agent script | q64 → **wasm32** on the device host; publishes measurements, **handles commands** |
-| [`backend/`](./backend/) | the platform | JS worker (deployable now) | q64 twin: aggregates, fans out to frontends, routes commands down |
-| [`frontend/`](./frontend/) | the browser | HTML served by the backend | q64 → **wasm32** remote controller, pushed to over one WebSocket |
+| Member | Instances | Runs | Today | Destination |
+|---|---|---|---|---|
+| [`device/`](./device/) | one per device | your hardware (Pi) | Python agent script | q64 → **wasm32** on the device host; publishes measurements, **handles commands** |
+| [`backend/`](./backend/) | **one per project** | the platform, as the project's **TWIN** | JS worker (deployable now); [`twin.q`](./backend/src/twin.q) persists via `env.db` | the twin: aggregates, persists, fans out to frontends, routes commands down |
+| [`frontend/`](./frontend/) | one per browser tab | the browser | HTML served by the backend | q64 → **wasm32** remote controller, pushed to over one WebSocket |
+
+The backend is not "part of" the frontend or the device — it's the piece
+both pair through. And it's **a deployment, not a route**: deploying it
+yields no URL, it yields the project's one always-on twin, which the
+platform pairs to every frontend socket and device reading by the project
+itself (see [`backend/README.md`](./backend/README.md)).
 
 The frontend↔backend leg is the [twin-counter](../twin-counter/) pattern,
 already running in production. The device leg is what this example adds:
