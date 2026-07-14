@@ -14,28 +14,33 @@ cd "$(dirname "$0")"
 API="${QUBEPODS_API:-https://api.qubepods.com}"
 : "${QUBEPODS_TOKEN:?set QUBEPODS_TOKEN (project token, deploy scope)}"
 
-# 1. Build: q64 ≥ 0.0.10 emits the .kvcore store-component core (0.0.9 emits
-#    a module that traps on its first state-Vec write — don't ship it).
-#    The build exits non-zero on the final component-lift step (a tracked q64
-#    gap — the twin runtime runs the core directly), so gate on the artifact,
-#    not the exit code.
+# 1. Build (CLEAN — a stale artifact from an older source must never ship).
+#    A db/kv-using qube emits the .kvcore store-component core; a pure
+#    channel qube (this fleet twin) emits only the raw core — the twin
+#    runtime runs either. The build exits non-zero on the final
+#    component-lift step (a tracked q64 gap), so gate on the artifact, not
+#    the exit code. q64 ≥ 0.0.10 required (0.0.9 emits a module that traps
+#    on its first state-Vec write).
+rm -rf target
 qube build --addr wasm32 || true
-KVCORE=$(ls target/debug/wasm32/*.kvcore.wasm | head -1)
-[ -f "$KVCORE" ] || { echo "no .kvcore artifact — check the qube/q64 version" >&2; exit 1; }
+KVCORE=$(ls target/debug/wasm32/*.kvcore.wasm 2>/dev/null | head -1 || true)
+RAWCORE=$(ls target/debug/wasm32/*.wasm 2>/dev/null | grep -v '\.component\.' | head -1 || true)
+ARTIFACT="${KVCORE:-$RAWCORE}"
+[ -n "$ARTIFACT" ] && [ -f "$ARTIFACT" ] || { echo "no wasm artifact — check the qube/q64 version" >&2; exit 1; }
 
 # 2. Bundle: the deploy manifest + the artifact. `runtime: "stateful"` is the
 #    line that makes this a twin — the platform routes the app's WebSocket to
 #    the project's ProjectTwin, which runs this wasm per message.
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
-cp "$KVCORE" "$WORK/thermo.kvcore.wasm"
+cp "$ARTIFACT" "$WORK/thermo.kvcore.wasm"
 cat > "$WORK/qubepod.jsonc" <<'MANIFEST'
 {
   "apiVersion": "qubepods.com/v1",
   "kind": "QubePod",
   "name": "qubepods.examples.thermo",
   "project": "iot",
-  "version": "0.2.0",
+  "version": "0.2.2",
   "runtime": "stateful",
   "component": { "wasm": "thermo.kvcore.wasm" }
 }

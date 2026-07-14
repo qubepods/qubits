@@ -8,10 +8,11 @@
   type: "workspace",
 
   workspace: {
-    // `backend` is the deployable JS worker; `device` and `frontend` are q64
-    // placeholder qubes that compile to valid wasm32 components today and
-    // grow into the sensor actor / browser twin (see the README's
-    // "Where this example is headed").
-    members: ["device", "backend", "frontend"],
+    // FOUR applications, the per-entity twin architecture: `device` runs on
+    // the hardware; `device-twin` is its per-device backend twin (persists
+    // readings to the project database); `backend` is the FLEET twin (the
+    // frontend's single backend twin — fan-out); `frontend` is the stateless
+    // aggregated dashboard (dynamic worker + project db + pushed updates).
+    members: ["device", "device-twin", "backend", "frontend"],
   },
 }

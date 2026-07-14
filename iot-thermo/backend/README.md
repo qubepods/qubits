@@ -1,42 +1,41 @@
-# backend — the project's TWIN
+# backend — the FLEET TWIN
 
-The piece both other members talk to. If you remember one thing: **the
-backend is a deployment, not a route.**
+The frontend's single backend twin, and the aggregation point of the star.
+If you remember one thing: **a twin is a deployment, not a route.**
 
 ## The mental model
 
-A thermo project has three kinds of code, and each runs in a different place:
+A thermo project has four applications, and each runs in a different place:
 
 | Member | Instances | Runs |
 |---|---|---|
-| `frontend/` | one **per browser tab** | in each visitor's browser |
+| `frontend/` | one **per browser tab** | in each visitor's browser (+ a stateless dynamic worker serving it) |
 | `device/` | one **per device** | on each of your enrolled boxes |
-| `backend/` | **exactly one per project** | on the platform — as the project's **twin** |
+| `device-twin/` | one **per device** | on the platform — each device's **digital twin** (persists its readings) |
+| `backend/` | **exactly one per project** | on the platform — the **fleet twin** every browser subscribes to |
 
-The backend is called a *twin* because that's what it is: the always-on
-digital twin of your fleet. Devices stream readings **up into it**; browsers
-subscribe **down from it**; it holds the shared state and does the durable
-writes. It is not "part of" the frontend or the device — it's the meeting
-point they pair through.
+Every browser holds ONE WebSocket to this twin; every device reading —
+after the device's own twin has written it to the project database —
+arrives here and fans out to all of them as a packed
+`(device_id << 32 | temp_mc)` i64. A joining frontend is greeted with the
+whole fleet's current state, so its gauges fill in before the first live
+frame.
+
+This twin deliberately does **not** write the database — persistence is the
+device twins' job (one writer per device). When the platform's in-twin read
+engine lands, this is where aggregate queries (`env.db.query_*`) over the
+project database will live.
 
 ## A deployment, not a route
 
-Deploying the frontend gives you a URL. Deploying the backend gives you a
-**running twin** — no URL of its own, no worker to point at. The platform
-pairs everything by the **project**:
-
-1. A browser opens the frontend and its WebSocket goes to the app's own URL.
-   The platform sees the app is `runtime: "stateful"` and routes the socket
-   to the project's twin — one shared instance, created on first contact.
-2. The twin loads **this member's deployed artifact** and runs it for every
-   message that arrives — a reading from a device, a join from a browser.
-3. The twin's `env.db` writes land in the **project database** — the same
-   one your console's Database page shows.
-
-So the backend appears on the console's Applications page like any other
-member (it has a manifest, a name, deployments and versions) — it just has
-no "open" link. Its output *is* the live state the frontends render and the
-rows in your database.
+Deploying the frontend gives you a URL. Deploying this member gives you a
+**running twin** — no URL of its own. The platform pairs everything by the
+project: the frontend's WebSocket routes here because this is the project's
+stateful app without a `twin` pairing (the device twins declare
+`twin: { of: … }`; this one doesn't — that's what makes it the fleet twin).
+It appears on the console's Applications page like any member (deployments,
+versions) — it just has no "open" link. Its output *is* the live frames the
+browsers render.
 
 Being its own application is deliberate: the twin deploys **independently**
 of the frontend and the device code. A UI rollout never redeploys the twin;
@@ -47,27 +46,19 @@ deployments stay separate.
 
 ## Files
 
-- [`src/twin.q`](./src/twin.q) — the twin. Owns the schema
-  (`setup()` creates `thermo_readings`; the platform calls it once per
-  deployed artifact), appends one row per reading via `env.db`, and fans
-  each reading out to every connected frontend. Build:
-  `qube build --addr wasm32` → the `.kvcore` artifact is what the twin
-  runtime runs. **Requires q64 ≥ 0.0.10** (0.0.9 emits a trapping module
-  for db twins).
-- [`deploy.sh`](./deploy.sh) — builds and ships the twin as a **stateful**
-  deployment (`runtime: "stateful"` in the deploy manifest is the line that
-  makes it a twin). Needs `QUBEPODS_TOKEN` (project token, deploy scope);
-  until `qube deploy` packs the `.kvcore` artifact itself, this script is
-  the deploy path.
-- [`src/index.js`](./src/index.js) — the retired v0 **stateless** JS worker
-  (dashboard page + `POST /api/report` over `env.KV`). `qube.json5` now
-  deploys the twin instead; the worker stays as reference until the
-  frontend member takes over the dashboard (a twin has no HTTP surface —
-  pages belong to the frontend).
+- [`src/twin.q`](./src/twin.q) — the fleet twin: subscriber fan-out, pure
+  channel code, no store imports (it builds to the raw core; the db-writing
+  twin is [`../device-twin/`](../device-twin/)).
+- [`deploy.sh`](./deploy.sh) — clean-builds and ships it as a **stateful**
+  deployment (`runtime: "stateful"` is the line that makes it a twin).
+  Needs `QUBEPODS_TOKEN` (project token, deploy scope).
+- [`src/index.js`](./src/index.js) — the retired v0 stateless JS worker
+  (dashboard + `POST /api/report` over `env.KV`), kept for reference; the
+  dashboard now lives in [`../frontend/`](../frontend/).
 
-## One project = one twin
+## One project = one fleet twin
 
-Because the twin is addressed by the project, a project has exactly **one**
-backend. That's a feature, not a limit: every frontend and every device in
-the project converge on the same state. Want an isolated playground? That's
-what a second *project* is for (the platform's staging model).
+Because the fleet twin is addressed by the project + this app, a project has
+exactly one aggregation point — every frontend and every device converge on
+the same state. Want an isolated playground? That's what a second *project*
+is for (the platform's staging model).

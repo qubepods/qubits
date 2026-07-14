@@ -34,22 +34,32 @@ Two independent planes, one agent, one thermometer reading:
 
 ## Shape — one project, three members
 
-This example is a **workspace**: one qubepods project, three members, one per
-host. Each member is a complete qube — its own manifest and source folder —
-and the difference between them is **where its instances run and how many
-there are**:
+This example is a **workspace**: one qubepods project, FOUR members — the
+per-entity digital-twin architecture. Each member is a complete qube — its
+own manifest and source folder — and the difference between them is **where
+its instances run and how many there are**:
 
-| Member | Instances | Runs | Today | Destination |
-|---|---|---|---|---|
-| [`device/`](./device/) | one per device | your hardware (Pi) | Python agent script | q64 → **wasm32** on the device host; publishes measurements, **handles commands** |
-| [`backend/`](./backend/) | **one per project** | the platform, as the project's **TWIN** | JS worker (deployable now); [`twin.q`](./backend/src/twin.q) persists via `env.db` | the twin: aggregates, persists, fans out to frontends, routes commands down |
-| [`frontend/`](./frontend/) | one per browser tab | the browser | HTML served by the backend | q64 → **wasm32** remote controller, pushed to over one WebSocket |
+| Member | Instances | Runs | Role |
+|---|---|---|---|
+| [`device/`](./device/) | one per device | your hardware (Pi) | the sensor: measurements up the node plane (Python agent today; q64 → wasm32 on the device host as the destination) |
+| [`device-twin/`](./device-twin/) | **one per device** | the platform | that device's **digital twin**: persists every reading into the project database via `env.db` |
+| [`backend/`](./backend/) | **one per project** | the platform | the **FLEET twin** — the frontend's single backend twin: fans every reading out to all browsers |
+| [`frontend/`](./frontend/) | one per browser tab | the browser + a stateless dynamic worker | the aggregated dashboard: history from the project database, live updates **pushed** over one WebSocket |
 
-The backend is not "part of" the frontend or the device — it's the piece
-both pair through. And it's **a deployment, not a route**: deploying it
-yields no URL, it yields the project's one always-on twin, which the
-platform pairs to every frontend socket and device reading by the project
-itself (see [`backend/README.md`](./backend/README.md)).
+```
+Pi ──node plane──►  DEVICE TWIN (per device)     FRONTEND (stateless, no containers)
+                     env.db INSERT ─► project DB ◄─ /api/history
+                          │ packed frame                │ serves the page
+                          ▼                             ▼
+                    FLEET TWIN (per project) ──wss──► browser (updates pushed)
+```
+
+The pairing is declared, not configured: the device twin's manifest says
+`twin: { of: "<device app>" }`, and the platform routes each device's
+readings through that device's own twin instance before the fleet twin fans
+out. Twins are **deployments, not routes** — deploying one yields no URL, it
+yields running instances the platform pairs by the project
+(see [`backend/README.md`](./backend/README.md)).
 
 Each member **deploys independently, on purpose**. That keeps the blast
 radius small — a frontend rollout can't take down the twin, and a bad twin

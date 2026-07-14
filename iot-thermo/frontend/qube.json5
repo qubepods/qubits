@@ -1,18 +1,27 @@
 {
   $schema: "https://q64.dev/schema/qube.json5",
   name: "qubepods.examples.thermo_frontend",
-  version: "0.1.0",
+  version: "0.2.0",
   license: "MIT OR Apache-2.0",
-  description: "The frontend member — the browser twin (remote controller). Placeholder main today; becomes the wasm32 qube holding one wRPC channel to the backend (the twin-counter pattern): readings pushed down, commands sent up. Until then the dashboard is served inline by the backend.",
+  description: "The aggregated dashboard — a STATELESS qube in a dynamic worker (no containers). Serves the gauge page and /api/history from the project database (the one the device twins write); live updates arrive PUSHED over one WebSocket to the fleet twin. The q64 browser-twin build (src/main.q) is the destination; the JS worker is today's implementation.",
 
   project: "iot",
 
   type: "application",
-  entry: "src/main.q",
+  runtime: "stateless",
 
   component: {
-    emit: true,
-    world: "thermo-frontend",
-    worlds: ["wasi:cli/command"],
+    language: "javascript",
+    module: "src/index.js",
+  },
+
+  exports: {
+    http: { interface: "qubepods:http/handler", route: "/" },
+  },
+
+  imports: {
+    // env.DB — the project database (the same SQLite the device twins'
+    // env.db statements land in). Serves /api/history.
+    database: [{ name: "db", interface: "qubepods:sql/query", tier: "light-fast" }],
   },
 }

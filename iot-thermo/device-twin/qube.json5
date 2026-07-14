@@ -1,0 +1,33 @@
+{
+  $schema: "https://q64.dev/schema/qube.json5",
+  name: "qubepods.examples.thermo_device_twin",
+  version: "0.1.0",
+  license: "MIT OR Apache-2.0",
+  description: "The DEVICE TWIN — the per-device backend twin. One instance runs per enrolled device; each reading its device reports is persisted into the project database via env.db. The twin pairing below is what routes a device's readings through its own twin.",
+
+  project: "iot",
+
+  // `twin.of` declares this app as the digital twin OF the device app: the
+  // platform runs one instance per device (never shared), feeding it that
+  // device's readings. A stateful app WITHOUT `twin` is the project-level
+  // fleet twin instead (see ../backend/).
+  twin: { of: "qubepods.examples.thermo_device" },
+
+  type: "application",
+  runtime: "stateful",
+
+  entry: "src/twin.q",
+
+  build: "qube build --addr wasm32",
+  component: {
+    emit: true,
+    world: "thermo-device-twin",
+  },
+  rpc: {
+    export: true,
+  },
+
+  effects: {
+    declared: ["@db", "@wire"],
+  },
+}
