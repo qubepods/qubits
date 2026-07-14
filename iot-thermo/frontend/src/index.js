@@ -148,7 +148,7 @@ const PAGE = `<!doctype html>
             '<span class="pill ' + state[0] + '">' + state[1] + '</span></div>' +
             '<div class="temp" style="color:' + color + '">' + d.tempC.toFixed(1) + '<small> °C</small></div>' +
             '<div class="meta">' +
-              (m.ip ? '<b>ip</b> ' + esc(m.ip) + ' · ' : '') +
+              (m.ip ? '<b>ip</b> ' + esc(m.ip) + '<br/>' : '') +
               (os ? '<b>os</b> ' + esc(os) + (m.hostname ? ' (' + esc(m.hostname) + ')' : '') + '<br/>' : '') +
               '<b>last reading</b> ' + (d.at ? new Date(d.at).toLocaleTimeString() : '–') +
             '</div>' +
