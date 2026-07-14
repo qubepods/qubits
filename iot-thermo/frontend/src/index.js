@@ -4,7 +4,7 @@
 //   • HISTORY — GET /api/history reads the PROJECT DATABASE (env.DB, the same
 //     SQLite the device twins' env.db statements land in) and returns the
 //     recent readings per device. The page seeds its sparklines from it.
-//   • LIVE — the page holds ONE WebSocket to the FLEET TWIN (the project's
+//   • LIVE — the page holds ONE WebSocket to the DASHBOARD TWIN (the project's
 //     backend twin) and updates are PUSHED: each frame is a packed
 //     (device_id << 32 | temp_mc) i64. No polling.
 //
@@ -165,7 +165,7 @@ const PAGE = `<!doctype html>
     if (isLive) render();
   }
 
-  // The fleet twin's socket URL: same gate, the fleet app's segment. Under the
+  // The dashboard twin's socket URL: same gate, the fleet app's segment. Under the
   // stage gate the page lives at /q/<org>/<proj>/<app>/<env>/ — swap the app.
   // Elsewhere pass ?twin=wss://… explicitly.
   function twinUrl() {
@@ -198,7 +198,7 @@ const PAGE = `<!doctype html>
   }
 
   // The fleet ROSTER — device identity (name, ip, os) + last-reading time,
-  // served by the platform at /.well-known/fleet on the fleet twin's route.
+  // served by the platform at /.well-known/fleet on the dashboard twin's route.
   // Same URL derivation as the socket, over https.
   function rosterUrl() {
     const u = new URL(twinUrl());

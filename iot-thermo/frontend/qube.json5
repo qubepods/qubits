@@ -3,7 +3,7 @@
   name: "qubepods.examples.thermo_frontend",
   version: "0.2.0",
   license: "MIT OR Apache-2.0",
-  description: "The aggregated dashboard — a STATELESS qube in a dynamic worker (no containers). Serves the gauge page and /api/history from the project database (the one the device twins write); live updates arrive PUSHED over one WebSocket to the fleet twin. The q64 browser-twin build (src/main.q) is the destination; the JS worker is today's implementation.",
+  description: "The aggregated dashboard — a STATELESS qube in a dynamic worker (no containers). Serves the gauge page and /api/history from the project database (the one the device twins write); live updates arrive PUSHED over one WebSocket to the dashboard twin. The q64 browser-twin build (src/main.q) is the destination; the JS worker is today's implementation.",
 
   project: "iot",
 

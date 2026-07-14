@@ -1,4 +1,4 @@
-//! thermo FLEET TWIN — the frontend's backend twin, one instance per project.
+//! thermo DASHBOARD TWIN — the frontend's backend twin, one instance per project.
 //!
 //! The aggregation point of the star: every browser holds ONE WebSocket to
 //! this twin, and every device reading — after the device's OWN twin

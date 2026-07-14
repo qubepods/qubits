@@ -32,7 +32,7 @@ Two independent planes, one agent, one thermometer reading:
   established, the agent falls back to the 5-minute heartbeat poll — the same
   backup path the platform defines. The device never opens an inbound port.
 
-## Shape — one project, three members
+## Shape — one project, four members
 
 This example is a **workspace**: one qubepods project, FOUR members — the
 per-entity digital-twin architecture. Each member is a complete qube — its
@@ -43,7 +43,7 @@ its instances run and how many there are**:
 |---|---|---|---|
 | [`device/`](./device/) | one per device | your hardware (Pi) | the sensor: measurements up the node plane (Python agent today; q64 → wasm32 on the device host as the destination) |
 | [`device-twin/`](./device-twin/) | **one per device** | the platform | that device's **digital twin**: persists every reading into the project database via `env.db` |
-| [`backend/`](./backend/) | **one per project** | the platform | the **FLEET twin** — the frontend's single backend twin: fans every reading out to all browsers |
+| [`backend/`](./backend/) | **one per project** | the platform | the **DASHBOARD twin** — the frontend's single backend twin: fans every reading out to all browsers |
 | [`frontend/`](./frontend/) | one per browser tab | the browser + a stateless dynamic worker | the aggregated dashboard: history from the project database, live updates **pushed** over one WebSocket |
 
 ```
@@ -51,12 +51,12 @@ Pi ──node plane──►  DEVICE TWIN (per device)     FRONTEND (stateless, 
                      env.db INSERT ─► project DB ◄─ /api/history
                           │ packed frame                │ serves the page
                           ▼                             ▼
-                    FLEET TWIN (per project) ──wss──► browser (updates pushed)
+                    DASHBOARD TWIN (per project) ──wss──► browser (updates pushed)
 ```
 
 The pairing is declared, not configured: the device twin's manifest says
 `twin: { of: "<device app>" }`, and the platform routes each device's
-readings through that device's own twin instance before the fleet twin fans
+readings through that device's own twin instance before the dashboard twin fans
 out. Twins are **deployments, not routes** — deploying one yields no URL, it
 yields running instances the platform pairs by the project
 (see [`backend/README.md`](./backend/README.md)).
@@ -77,31 +77,34 @@ down).
 ## Files
 
 - [`qube.json5`](./qube.json5) — the workspace root binding the members.
-- [`backend/qube.json5`](./backend/qube.json5) — the deployable manifest; one
-  KV import, nothing else.
-- [`backend/src/index.js`](./backend/src/index.js) — the worker:
-  `POST /api/report`, `GET /api/fleet`, and the dashboard page.
+- [`backend/`](./backend/) — the **dashboard twin** (q64, `runtime:
+  "stateful"`, fan-out only; `deploy.sh` builds and ships it). The retired
+  v0 JS worker (`src/index.js`) stays for reference.
+- [`device-twin/`](./device-twin/) — the **per-device backend twin** (q64,
+  `twin: { of: … }` pairing; `env.db` INSERT per reading; `deploy.sh`).
+- [`frontend/`](./frontend/) — the **aggregated dashboard**: a stateless JS
+  qube serving the page + `/api/history`, pushed to by the dashboard twin
+  (`deploy.sh`).
 - [`device/thermo_agent.py`](./device/thermo_agent.py) — the device agent
   the fleet runs today (**requires `python3`** — preinstalled on Raspberry Pi
   OS). Stdlib-only for the app plane; `pip install websocket-client` enables
   the node-plane trunk. Hand-copying it to the device is scaffolding:
   **enrollment is the last manual act** — placing workloads on an enrolled
   node is the platform's job (see [`device/README.md`](./device/README.md)).
-- [`device/qube.json5`](./device/qube.json5) +
-  [`frontend/qube.json5`](./frontend/qube.json5) — the two q64 members:
-  placeholder mains that compile to valid wasm32 components today
-  (`qube build --addr wasm32`) and grow into the sensor actor and the
-  browser twin.
+- [`device/qube.json5`](./device/qube.json5) — the q64 device member:
+  a placeholder main that compiles to a valid wasm32 component today and
+  grows into the sensor actor.
 
 ## Run it
 
-**1. Deploy the Qube** — from `backend/`, in the web shell
-([app.qubepods.com](https://app.qubepods.com)) or a terminal after
-`qube pod login`:
+**1. Deploy the members** — each has a `deploy.sh` (project token with the
+deploy scope; the twins need q64 ≥ 0.0.11):
 
 ```console
-$ qube deploy
-… https://<project>.qubepod.app/
+$ (cd device-twin && QUBEPODS_TOKEN=qube_… ./deploy.sh)
+$ (cd backend     && QUBEPODS_TOKEN=qube_… ./deploy.sh)
+$ (cd frontend    && QUBEPODS_TOKEN=qube_… ./deploy.sh)
+… the frontend deploy prints the dashboard URL
 ```
 
 **2. Start a device** — no hardware needed for a first look:

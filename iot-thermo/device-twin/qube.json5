@@ -10,7 +10,7 @@
   // `twin.of` declares this app as the digital twin OF the device app: the
   // platform runs one instance per device (never shared), feeding it that
   // device's readings. A stateful app WITHOUT `twin` is the project-level
-  // fleet twin instead (see ../backend/).
+  // dashboard twin instead (see ../backend/).
   twin: { of: "qubepods.examples.thermo_device" },
 
   type: "application",
