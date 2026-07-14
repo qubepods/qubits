@@ -47,11 +47,16 @@ rows in your database.
   `qube build --addr wasm32` → the `.kvcore` artifact is what the twin
   runtime runs. **Requires q64 ≥ 0.0.10** (0.0.9 emits a trapping module
   for db twins).
-- [`src/index.js`](./src/index.js) — the v0 **stateless** JS worker
-  (dashboard page + `POST /api/report` over `env.KV`). This is what
-  `qube.json5` still deploys today; it predates the twin and is replaced by
-  it. It stays until the frontend member takes over the dashboard (a twin
-  has no HTTP surface — pages belong to the frontend).
+- [`deploy.sh`](./deploy.sh) — builds and ships the twin as a **stateful**
+  deployment (`runtime: "stateful"` in the deploy manifest is the line that
+  makes it a twin). Needs `QUBEPODS_TOKEN` (project token, deploy scope);
+  until `qube deploy` packs the `.kvcore` artifact itself, this script is
+  the deploy path.
+- [`src/index.js`](./src/index.js) — the retired v0 **stateless** JS worker
+  (dashboard page + `POST /api/report` over `env.KV`). `qube.json5` now
+  deploys the twin instead; the worker stays as reference until the
+  frontend member takes over the dashboard (a twin has no HTTP surface —
+  pages belong to the frontend).
 
 ## One project = one twin
 
