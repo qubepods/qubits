@@ -51,6 +51,12 @@ yields no URL, it yields the project's one always-on twin, which the
 platform pairs to every frontend socket and device reading by the project
 itself (see [`backend/README.md`](./backend/README.md)).
 
+Each member **deploys independently, on purpose**. That keeps the blast
+radius small — a frontend rollout can't take down the twin, and a bad twin
+deploy leaves the frontend serving — and it matches how real teams ship:
+firmware, backend, and UI often belong to different people on different
+cadences. The project is what binds them; the deployments stay separate.
+
 The frontend↔backend leg is the [twin-counter](../twin-counter/) pattern,
 already running in production. The device leg is what this example adds:
 telemetry up, commands down, zero inbound ports. Picture the end state as a

@@ -38,6 +38,13 @@ member (it has a manifest, a name, deployments and versions) — it just has
 no "open" link. Its output *is* the live state the frontends render and the
 rows in your database.
 
+Being its own application is deliberate: the twin deploys **independently**
+of the frontend and the device code. A UI rollout never redeploys the twin;
+a twin change never touches what browsers are served; and a backend team
+can own this member end to end while another team ships the frontend. Small
+blast radius, real team boundaries — the project binds the members, the
+deployments stay separate.
+
 ## Files
 
 - [`src/twin.q`](./src/twin.q) — the twin. Owns the schema
